@@ -4,7 +4,7 @@
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
  * @date February 18, 2025
- * @dependencies pg, types/question, errors/databaseErrors, repositories/repository
+ * @dependencies pg, types/question, errors/databaseErrors, repositories/repository, io/io, utils/stringUtils, json/jsonParser, io/logger
  */
 
 import { QuestionSchema, questionSchema } from '../json/jsonSchema.js';
@@ -14,6 +14,7 @@ import { getAllFileNames, readFile } from '../io/io.js';
 import { escapeHtml } from '../utils/stringUtils.js';
 import { parseJson } from '../json/jsonParser.js';
 import { Repository } from './repository.js';
+import { logger } from '../io/logger.js';
 import pg from 'pg';
 
 /**
@@ -214,18 +215,18 @@ export class QuestionRepository {
   async saveQuestionsFromFile(filePath: string) {
     const files = await getAllFileNames(filePath);
     if (!files || files.length === 0) {
-      console.log('[INFO]: No data files found');
+      logger.info('[INFO]: No data files found');
       return;
     }
 
     for (const file of files) {
-      console.log(`[INFO]: Reading file ${file}`);
+      logger.info(`[INFO]: Reading file ${file}`);
       const contents = await readFile(`${filePath}/${file}`);
       if (contents) {
         const data = parseJson<QuestionSchema>(contents, questionSchema);
         if (data) {
           for (const question of data.questions) {
-            console.log(`[INFO]: Saving question ${question.question}`);
+            logger.info(`[INFO]: Saving question ${question.question}`);
             const questionToSave: Question = {
               question: escapeHtml(question.question),
               category: { name: data.title },

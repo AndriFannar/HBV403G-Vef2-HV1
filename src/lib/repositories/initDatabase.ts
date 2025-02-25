@@ -7,10 +7,10 @@
  * @dependencies pg, dotenv, QuestionRepository, schema
  */
 
-import { Repository } from './repository.js';
-import dotenv from 'dotenv';
 import { QuestionRepository } from './questionRepository.js';
+import { Repository } from './repository.js';
 import { schema } from '../../sql/schema.js';
+import dotenv from 'dotenv';
 
 dotenv.config();
 

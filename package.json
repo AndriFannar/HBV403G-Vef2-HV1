@@ -14,7 +14,7 @@
     "dev": "nodemon src/server.ts",
     "test": "vitest",
     "coverage": "vitest run --coverage",
-    "lint": "eslint ./src/**/*.js"
+    "lint": "eslint ./src/**/*.ts"
   },
   "repository": {
     "type": "git",

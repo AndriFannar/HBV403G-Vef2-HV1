@@ -7,9 +7,10 @@
  * @dependencies pg, dotenv, errors/databaseErrors
  */
 
-import pg from 'pg';
 import { ConnectionError, QueryError } from '../errors/databaseErrors.js';
+import { logger } from '../io/logger.js';
 import dotenv from 'dotenv';
+import pg from 'pg';
 
 dotenv.config();
 
@@ -26,7 +27,7 @@ export class Repository {
   constructor(connectionString?: string) {
     const dbUrl = connectionString || process.env.DATABASE_URL;
     if (!dbUrl) {
-      console.error('DATABASE_URL not provided in .env');
+      logger.error('DATABASE_URL not provided in .env');
       process.exit(1);
     }
 
@@ -38,7 +39,7 @@ export class Repository {
     this.pool = new pg.Pool(poolConfig);
 
     this.pool.on('error', err => {
-      console.error('Unexpected Postgres error:', err);
+      logger.error('Unexpected Postgres error:', err);
       process.exit(1);
     });
   }
@@ -58,7 +59,7 @@ export class Repository {
     try {
       client = await this.pool.connect();
     } catch (err) {
-      console.error('Unable to connect: ', err);
+      logger.error('Unable to connect: ', err);
       throw new ConnectionError(
         'Unable to connect to database',
         err instanceof Error ? err : new Error(String(err))
@@ -69,7 +70,7 @@ export class Repository {
       const result = await client.query<T>(query, values);
       return result.rows;
     } catch (err) {
-      console.error('Query failed: ', err);
+      logger.error('Query failed: ', err);
       throw new QueryError(
         'Database Query Failed',
         err instanceof Error ? err : new Error(String(err))
@@ -85,6 +86,7 @@ export class Repository {
    * @returns - The result of the transaction.
    */
   async transaction<T>(
+    // eslint-disable-next-line no-unused-vars
     callback: (client: pg.PoolClient) => Promise<T>
   ): Promise<T> {
     let client: pg.PoolClient;
@@ -92,7 +94,7 @@ export class Repository {
     try {
       client = await this.pool.connect();
     } catch (err) {
-      console.error('Unable to connect: ', err);
+      logger.error('Unable to connect: ', err);
       throw new ConnectionError(
         'Unable to connect to database',
         err instanceof Error ? err : new Error(String(err))
@@ -106,7 +108,7 @@ export class Repository {
       return result;
     } catch (err) {
       await client.query('ROLLBACK');
-      console.error('Transaction failed: ', err);
+      logger.error('Transaction failed: ', err);
       throw new QueryError(
         'Database Transaction Failed',
         err instanceof Error ? err : new Error(String(err))
