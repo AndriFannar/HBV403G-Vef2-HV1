@@ -4,9 +4,10 @@
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
  * @date January 26, 2025
- * @dependencies node:fs/promises, node:path
+ * @dependencies node:fs/promises, node:path, ./logger.js
  */
 
+import { logger } from './logger.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -21,7 +22,7 @@ export async function readFile(filePath: string): Promise<string | undefined> {
   try {
     contents = await fs.readFile(path.resolve(filePath), 'utf-8');
   } catch (err) {
-    console.error('Error reading file:', err);
+    logger.error('Error reading file:', err);
   }
 
   return contents;
@@ -40,7 +41,7 @@ export async function getAllFileNames(
   try {
     fileNames = await fs.readdir(path.resolve(dirPath));
   } catch (err) {
-    console.error('Error reading directory:', err);
+    logger.error('Error reading directory:', err);
   }
   return fileNames;
 }
@@ -56,6 +57,6 @@ export async function writeFile(filePath: string, data: string): Promise<void> {
   try {
     await fs.writeFile(path.resolve(filePath), data);
   } catch (err) {
-    console.error('Error writing file:', err);
+    logger.error('Error writing file:', err);
   }
 }

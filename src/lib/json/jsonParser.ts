@@ -1,12 +1,14 @@
-import { JsonSchema } from './jsonSchema.js';
-
 /**
  * @file jsonParser.ts
  * @description A JSON parser utility that turns strings into objects, throwing away invalid JSON. Converted to TypeScript by ChatGPT from project 1.
  * @author Andri Fannar Kristjánsson
  * @version 2.5.1
  * @date January 26, 2025
+ * @dependencies ./jsonSchema.js, ../io/infoger.js
  */
+
+import { JsonSchema } from './jsonSchema.js';
+import { logger } from '../io/logger.js';
 
 /**
  * Recursively validates a JSON value against a given schema.
@@ -31,7 +33,7 @@ export function validateJson(
     case 'object':
       return validateObject(json, validSchema, verbose);
     default:
-      console.warn(`[WARN]: Unknown type "${validSchema.type}".`);
+      logger.warn(`[WARN]: Unknown type "${validSchema.type}".`);
       return null;
   }
 }
@@ -50,10 +52,10 @@ function validatePrimitive(
   verbose = false
 ): unknown | null {
   if (verbose) {
-    console.log(`[INFO]: Validating primitive with type "${typeof json}".`);
+    logger.info(`[INFO]: Validating primitive with type "${typeof json}".`);
   }
   if (typeof json !== validSchema.type) {
-    console.warn(
+    logger.warn(
       `[WARN]: Expected type "${validSchema.type}" but received "${typeof json}".`
     );
     return null;
@@ -75,40 +77,38 @@ function validateArray(
   verbose = false
 ): unknown[] | null {
   if (!Array.isArray(json)) {
-    console.warn(`[WARN]: Expected array but received "${typeof json}".`);
+    logger.warn(`[WARN]: Expected array but received "${typeof json}".`);
     return null;
   }
 
   if (verbose) {
-    console.log(`[INFO]: Validating array with "${json.length}" items.`);
+    logger.info(`[INFO]: Validating array with "${json.length}" items.`);
   }
 
   const validArray: unknown[] = [];
 
   // Ensure we have an items schema
   if (!validSchema.items) {
-    console.warn(`[WARN]: No "items" schema provided for array validation.`);
+    logger.warn(`[WARN]: No "items" schema provided for array validation.`);
     return null;
   }
 
   json.forEach((item: unknown, index: number) => {
     if (verbose) {
-      console.log(`[INFO]: Validating item at index [${index}]:`, item);
+      logger.info(`[INFO]: Validating item at index [${index}]:`, item);
     }
     const validatedItem = validateJson(item, validSchema.items!, verbose);
     if (validatedItem !== null) {
       validArray.push(validatedItem);
     } else {
-      console.warn(
+      logger.warn(
         `[WARN]: Invalid item at index "${index}". Excluding this item.`
       );
     }
   });
 
   if (validArray.length === 0) {
-    console.warn(
-      `[WARN]: No valid items found in array. Excluding this field.`
-    );
+    logger.warn(`[WARN]: No valid items found in array. Excluding this field.`);
     return null;
   }
   return validArray;
@@ -128,13 +128,13 @@ function validateObject(
   verbose = false
 ): { [key: string]: unknown } | null {
   if (typeof json !== 'object' || Array.isArray(json) || json === null) {
-    console.warn(`[WARN]: Expected object but received "${typeof json}".`);
+    logger.warn(`[WARN]: Expected object but received "${typeof json}".`);
     return null;
   }
 
   // Ensure we have properties defined in the schema
   if (!validSchema.properties) {
-    console.warn(
+    logger.warn(
       `[WARN]: No "properties" schema provided for object validation.`
     );
     return null;
@@ -148,11 +148,11 @@ function validateObject(
     const data = (json as { [key: string]: unknown })[key];
 
     if (verbose) {
-      console.log(`[INFO]: Checking key: "${key}"`);
+      logger.info(`[INFO]: Checking key: "${key}"`);
     }
 
     if (fieldSchema.required && (data === undefined || data === null)) {
-      console.warn(`[WARN]: Missing required field: "${key}"`);
+      logger.warn(`[WARN]: Missing required field: "${key}"`);
       isValid = false;
       continue;
     }
@@ -164,7 +164,7 @@ function validateObject(
 
     const validatedField = validateJson(data, fieldSchema, verbose);
     if (validatedField === null) {
-      console.warn(`[WARN]: Invalid field: "${key}". Excluding this field.`);
+      logger.warn(`[WARN]: Invalid field: "${key}". Excluding this field.`);
       isValid = false;
       continue;
     }
@@ -189,41 +189,41 @@ export function parseJson<T>(
   let parsed: unknown = null;
 
   if (verbose) {
-    console.log('[INFO]: Parsing JSON...');
+    logger.info('[INFO]: Parsing JSON...');
   }
 
   try {
     parsed = JSON.parse(jsonString);
   } catch (err: unknown) {
     if (err instanceof Error) {
-      console.error('[ERROR]: Error parsing JSON:', err.message);
+      logger.error('[ERROR]: Error parsing JSON:', err.message);
     } else {
-      console.error('[ERROR]: Error parsing JSON:', err);
+      logger.error('[ERROR]: Error parsing JSON:', err);
     }
     return null;
   }
 
   if (validSchema) {
     if (verbose) {
-      console.log('[INFO]: Validating JSON against schema...');
+      logger.info('[INFO]: Validating JSON against schema...');
     }
     try {
       parsed = validateJson(parsed, validSchema, verbose);
       if (parsed === null) {
-        console.warn('[WARN]: JSON validation returned null. JSON is invalid.');
+        logger.warn('[WARN]: JSON validation returned null. JSON is invalid.');
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
-        console.error('[ERROR]: Error validating JSON:', err.message);
+        logger.error('[ERROR]: Error validating JSON:', err.message);
       } else {
-        console.error('[ERROR]: Error validating JSON:', err);
+        logger.error('[ERROR]: Error validating JSON:', err);
       }
       return null;
     }
   }
 
   if (verbose) {
-    console.log('[INFO]: JSON parsing complete.');
+    logger.info('[INFO]: JSON parsing complete.');
   }
   return parsed as T;
 }

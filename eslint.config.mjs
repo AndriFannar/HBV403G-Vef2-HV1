@@ -27,7 +27,7 @@ export default [
 
       'prefer-const': ['error', { destructuring: 'all' }],
       'no-var': 'error',
-
+      'no-console': 'warn',
       'prettier/prettier': 'error',
     },
   },
