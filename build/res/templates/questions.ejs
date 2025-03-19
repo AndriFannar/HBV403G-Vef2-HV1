@@ -1,0 +1,37 @@
+<%- include('header') -%>
+
+<div class="main-content">
+  <% if (questions.length === 0) { %>
+    <h2><%= locals.noQuestions %></h2>
+  <% } %>
+  <div class="question-block">
+    <% questions.forEach((question, index) => { %>
+      <h2><%= question.question %></h2>
+      <form>
+        <fieldset>
+          <legend><%= locals.questionString %> <%= index + 1 %>:</legend>
+          <div>
+            <% question.answers.forEach((answer) => { %>
+              <div class="answer-item">
+                <input type="radio" id="<%= index %><%= answer.id %>" name="<%= index %>" data-info="<%= answer.isCorrect %>">
+                <label for="<%= index %><%= answer.id %>"><%= answer.answer %></label>
+              </div>
+            <% }); %>
+          </div>
+          <div class="correct feedback hidden">
+            <p><%= locals.correctAnswer %></p>
+          </div>
+          <div class="incorrect feedback hidden">
+            <p><%= locals.incorrectAnswer %></p>
+          </div>
+          <div>
+            <button type="submit" class="submit-button"><%= locals.buttonAnswer %></button>
+          </div>
+        </fieldset>
+      </form>
+    <% }); %>
+  </div>
+</div>
+<script src="/event.js"></script>
+
+<%- include('footer') -%>

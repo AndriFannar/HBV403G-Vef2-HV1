@@ -10,7 +10,7 @@
 export interface Environment {
   port: number;
   databaseUrl: string;
-  jwt_secret: string;
+  jwtSecret: string;
 }
 
 const DEFAULT_PORT = 3000;
@@ -31,7 +31,7 @@ export function getEnvironment(
     return parsedEnvironment;
   }
 
-  const { PORT: port, DATABASE_URL: databaseUrl, JWT_SECRET: jwt_secret } = env;
+  const { PORT: port, DATABASE_URL: databaseUrl, JWT_SECRET: jwtSecret } = env;
 
   let error = false;
 
@@ -51,15 +51,16 @@ export function getEnvironment(
     logger.info(`PORT not defined, using default port ${DEFAULT_PORT}`);
   }
 
-  if (!jwt_secret || jwt_secret.length === 0) {
-
-  if (error) {
-    return null;
+  if (!jwtSecret || jwtSecret.length === 0) {
+    if (error) {
+      return null;
+    }
   }
 
   parsedEnvironment = {
     port: usedPort,
     databaseUrl: databaseUrl as string,
+    jwtSecret: jwtSecret as string,
   };
 
   return parsedEnvironment;

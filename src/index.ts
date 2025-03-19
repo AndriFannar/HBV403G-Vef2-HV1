@@ -9,14 +9,16 @@
 
 import { categoriesApp } from './routes/categories.js';
 import { questionsApp } from './routes/questions.js';
+import { getEnvironment } from './lib/config/environment.js';
 import { logger } from './lib/io/logger.js';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 
-const DEFAULT_PORT = 3000;
-const port = process.env.PORT
-  ? parseInt(process.env.PORT as string)
-  : DEFAULT_PORT;
+const env = getEnvironment(process.env, logger);
+
+if (!env) {
+  process.exit(1);
+}
 
 const app = new Hono()
   .route('/categories', categoriesApp)
@@ -29,7 +31,7 @@ app.get('/', c => {
 serve(
   {
     fetch: app.fetch,
-    port: port,
+    port: env.port,
   },
   info => {
     logger.info(`Server is running on port: ${info.port}`);
