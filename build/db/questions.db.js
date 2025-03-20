@@ -11,7 +11,7 @@ import { randomInt } from 'crypto';
 const maxRandint = 281474976710655;
 const maxSlugLength = 64;
 const defaultNumQuestions = 10;
-const prisma = new PrismaClient();
+export const prisma = new PrismaClient();
 /**
  * Generates a slug for a question.
  * @param question - The question string to generate a slug for.

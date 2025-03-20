@@ -8,6 +8,7 @@
  */
 
 import { validateAndSanitizeSlug } from '../lib/validation/slugValidator.js';
+import { getEnvironment } from '../lib/config/environment.js';
 import { StatusCodes } from 'http-status-codes';
 import {
   validateAndSanitizeBaseQuestion,
@@ -22,14 +23,21 @@ import {
   updateQuestion,
   deleteQuestion,
 } from '../db/questions.db.js';
+import { jwt } from 'hono/jwt';
 import { Hono } from 'hono';
+
+const environment = getEnvironment(process.env, logger);
+
+if (!environment) {
+  process.exit(1);
+}
 
 export const questionsApp = new Hono()
 
   /**
    * @description Get all questions
    */
-  .get('/', async c => {
+  .get('/', jwt({ secret: environment.jwtSecret }), async c => {
     try {
       const questions = await getAllQuestions();
       return c.json(questions, StatusCodes.OK);
