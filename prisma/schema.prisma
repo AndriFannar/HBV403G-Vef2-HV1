@@ -7,30 +7,41 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model answers {
-  id         Int       @id @default(autoincrement())
-  questionId Int
-  answer     String    @db.VarChar(500)
-  isCorrect  Boolean
-  questions  questions @relation(fields: [questionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@index([questionId], map: "idx_answers_question_id")
+model Actor {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  project     Project  @relation(fields: [id], references: [id])
 }
 
-model categories {
-  id        Int         @id @default(autoincrement())
-  name      String      @unique @db.VarChar(64)
-  slug      String      @unique
-  questions questions[]
+model Condition {
+  id          Int      @id @default(autoincrement())
+  publicId    String
+  description String?
+  useCase     UseCase[]  @relation(fields: [id], references: [id])
 }
 
-model questions {
-  id         Int        @id @default(autoincrement())
-  categoryId Int
-  question   String     @db.VarChar(500)
-  slug       String     @unique
-  answers    answers[]
-  categories categories @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+model UseCase {
+  id              Int         @id @default(autoincrement())
+  publicId        String
+  project         Project     @relation(fields: [id], references: [id])
+  name            String
+  creator         User        @relation(fields: [id], references: [id])
+  dateCreated     DateTime
+  dateModified    DateTime
+  primaryActor    Actor       @relation(fields: [id], references: [id])
+  secondaryActors Actor[]     @relation(fields: [id], references: [id])
+  description     String?
+  conditions      Condition[] @relation(fields: [id], references: [id])
+}
+
+model Project {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  owner       User     @relation(fields: [id], references: [id])
+  useCases    UseCase[] @relation(fields: [id], references: [id]), onDelete: Cascade, onUpdate: NoAction)
+  actors      Actor[]  @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 enum Role {
@@ -39,8 +50,9 @@ enum Role {
 }
 
 model User {
-  id       Int    @id @default(autoincrement())
-  username String @unique
+  id       Int       @id @default(autoincrement())
+  username String    @unique
   password String
-  role     Role   @default(USER)
+  projects Project[] @relation(fields: [id], references: [id])
+  role     Role      @default(USER)
 }
