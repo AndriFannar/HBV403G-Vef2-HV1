@@ -46,7 +46,7 @@ export const BaseUserSchema = z.object({
  */
 export const UserSchema = BaseUserSchema.extend({
   id: z.number(),
-  Role: z.nativeEnum(Role),
+  role: z.nativeEnum(Role),
 });
 
 export type BaseUser = z.infer<typeof BaseUserSchema>;

@@ -7,9 +7,10 @@
  * @dependencies hono, @hono/node-server, logger.ts, categories.ts, questions.ts
  */
 
+import { getEnvironment } from './lib/config/environment.js';
 import { categoriesApp } from './routes/categories.js';
 import { questionsApp } from './routes/questions.js';
-import { getEnvironment } from './lib/config/environment.js';
+import { usersApp } from './routes/users.js';
 import { logger } from './lib/io/logger.js';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
@@ -22,7 +23,8 @@ if (!env) {
 
 const app = new Hono()
   .route('/categories', categoriesApp)
-  .route('/questions', questionsApp);
+  .route('/questions', questionsApp)
+  .route('/users', usersApp);
 
 app.get('/', c => {
   return c.text('Hello Hono!');

@@ -18,7 +18,7 @@ export function getEnvironment(env, logger) {
     if (parsedEnvironment) {
         return parsedEnvironment;
     }
-    const { PORT: port, DATABASE_URL: databaseUrl, JWT_SECRET: jwt_secret } = env;
+    const { PORT: port, DATABASE_URL: databaseUrl, JWT_SECRET: jwtSecret } = env;
     let error = false;
     if (!databaseUrl || databaseUrl.length === 0) {
         logger.error('DATABASE_URL must be defined as a string');
@@ -36,14 +36,15 @@ export function getEnvironment(env, logger) {
     else {
         logger.info(`PORT not defined, using default port ${DEFAULT_PORT}`);
     }
-    if (!jwt_secret || jwt_secret.length === 0) {
+    if (!jwtSecret || jwtSecret.length === 0) {
         if (error) {
             return null;
         }
-        parsedEnvironment = {
-            port: usedPort,
-            databaseUrl: databaseUrl,
-        };
-        return parsedEnvironment;
     }
+    parsedEnvironment = {
+        port: usedPort,
+        databaseUrl: databaseUrl,
+        jwtSecret: jwtSecret,
+    };
+    return parsedEnvironment;
 }
