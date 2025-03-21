@@ -140,7 +140,7 @@ model Step {
 
 model Reference {
   id       Int           @id @default(autoincrement())
-  ref      ReferenceType
+  refType  ReferenceType
   refId    Int
   location Int
   stepId   Int
