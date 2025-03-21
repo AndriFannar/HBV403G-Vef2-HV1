@@ -1,10 +1,10 @@
-# Krossaspurningasíða
-_HBV403G Vefforritun 2 - Einstaklingsverkefni 2_
+# API fyrir Krossaspurningar
+_HBV403G Vefforritun 2 - Einstaklingsverkefni 3_
 
-Annað einstaklingsverkefnið í HBV403G Vefforritun 2. Geymir spurningar í gagnagrunni og notar express með templates til að birta. Nánari verkefnalýsingu má finna [hér](https://github.com/vefforritun/vef2-2025-v2).
+Þriðja einstaklingsverkefnið í HBV403G Vefforritun 2. Notar Hono til að útfæra REST-ful API, og notar Prisma til að geyma gögn. Nánari verkefnalýsingu má finna [hér](https://github.com/vefforritun/vef2-2025-v3).
 
 ## Hýsing
-Verkefninu er hýst [hér](https://hbv403g-vef2-ev2-pls.onrender.com/).
+API má finna [hér](https://hbv403g-vef2-ev2-pls.onrender.com/).
 
 ## Uppsetning
 Verkefnið krefst `Node.js` útgáfu 22.
@@ -14,12 +14,13 @@ npm install
 ```
 
 ### Keyrsla
-Til þess að keyra verkefnið og búa til `HTML` skrárnar, þarf að gera 
+Til þess að keyra verkefnið þarf að gera
 ```bash
 npm run build
+npm run start
 ```
 
-Skrárnar eru settar í [dist](dist/) möppuna.
+Þýddu skrárnar má finna í [build](build/) möppunni.
 
 ### Prófanir
 Prófanirnar notast við Vitest útgáfu 3.
@@ -31,4 +32,3 @@ Einnig er hægt að sjá `coverage` með því að gera
 ```bash
 npm run coverage
 ```
-Ath. að sumar prófanir eiga það til að virka ekki þegar coverage er notað.
