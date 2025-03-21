@@ -138,7 +138,6 @@ model Step {
   refs   Reference[]
 }
 
-//TODO: Look at whether this works as a reference. Look at the UML diagram where the interface is used.
 model Reference {
   id       Int           @id @default(autoincrement())
   ref      ReferenceType
@@ -147,3 +146,5 @@ model Reference {
   stepId   Int
   step     Step          @relation(fields: [stepId], references: [id])
 }
+
+//TODO: Add versioning (history tables and look into triggers)
