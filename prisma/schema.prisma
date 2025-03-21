@@ -132,6 +132,7 @@ model Flow {
 model Step {
   id     Int         @id @default(autoincrement())
   stepNo Int
+  step   String
   flowId Int
   flow   Flow        @relation(fields: [flowId], references: [id])
   refs   Reference[]
