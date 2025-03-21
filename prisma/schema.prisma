@@ -7,40 +7,144 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model answers {
-  id         Int       @id @default(autoincrement())
-  questionId Int
-  answer     String    @db.VarChar(500)
-  isCorrect  Boolean
-  questions  questions @relation(fields: [questionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@index([questionId], map: "idx_answers_question_id")
-}
-
-model categories {
-  id        Int         @id @default(autoincrement())
-  name      String      @unique @db.VarChar(64)
-  slug      String      @unique
-  questions questions[]
-}
-
-model questions {
-  id         Int        @id @default(autoincrement())
-  categoryId Int
-  question   String     @db.VarChar(500)
-  slug       String     @unique
-  answers    answers[]
-  categories categories @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-}
-
 enum Role {
   ADMIN
   USER
 }
 
-model User {
-  id       Int    @id @default(autoincrement())
-  username String @unique
-  password String
-  role     Role   @default(USER)
+enum RuleType {
+  FACT
+  CONSTRAINT
+  COMPUTATION
 }
+
+enum Mutability {
+  DYNAMIC
+  STATIC
+}
+
+enum ReferenceType {
+  FLOW
+  STEP
+  CONDITION
+  BUSINESSRULE
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+}
+
+enum FlowType {
+  NORMAL
+  ALTERNATE
+  EXCEPTION
+}
+
+enum ConditionType {
+  PRECONDITION
+  POSTCONDITION
+}
+
+model User {
+  id       Int       @id @default(autoincrement())
+  username String    @unique
+  password String
+  projects Project[]
+  useCases UseCase[]
+}
+
+model Project {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  ownerId     Int
+  owner       User      @relation(fields: [ownerId], references: [id])
+  useCases    UseCase[]
+  actors      Actor[]
+}
+
+model Actor {
+  id                Int       @id @default(autoincrement())
+  name              String
+  description       String?
+  projectId         Int
+  project           Project   @relation(fields: [projectId], references: [id])
+  useCasesPrimary   UseCase[] @relation("PrimaryActor")
+  useCasesSecondary UseCase[] @relation("UseCaseSecondaryActors")
+}
+
+model UseCase {
+  id              Int            @id @default(autoincrement())
+  publicId        String         @unique
+  projectId       Int
+  project         Project        @relation(fields: [projectId], references: [id])
+  name            String
+  creatorId       Int
+  creator         User           @relation(fields: [creatorId], references: [id])
+  dateCreated     DateTime
+  dateModified    DateTime
+  primaryActorId  Int
+  primaryActor    Actor          @relation("PrimaryActor", fields: [primaryActorId], references: [id])
+  secondaryActors Actor[]        @relation("UseCaseSecondaryActors")
+  description     String?
+  trigger         String
+  priority        Priority       @default(NORMAL)
+  freqUse         String
+  otherInfo       String[]
+  assumptions     String[]
+  flows           Flow[]
+  conditions      Condition[]
+  businessRules   BusinessRule[]
+}
+
+model Condition {
+  id            Int           @id @default(autoincrement())
+  publicId      String        @unique
+  description   String?
+  conditionType ConditionType
+  useCaseId     Int
+  useCase       UseCase       @relation(fields: [useCaseId], references: [id])
+}
+
+model BusinessRule {
+  id         Int        @id @default(autoincrement())
+  publicId   String     @unique
+  ruleDef    String
+  type       RuleType
+  mutability Mutability
+  source     String
+  useCaseId  Int
+  useCase    UseCase    @relation(fields: [useCaseId], references: [id])
+}
+
+model Flow {
+  id        Int      @id @default(autoincrement())
+  publicId  String   @unique
+  name      String
+  flowType  FlowType
+  useCaseId Int
+  useCase   UseCase  @relation(fields: [useCaseId], references: [id])
+  steps     Step[]
+}
+
+model Step {
+  id     Int         @id @default(autoincrement())
+  stepNo Int
+  step   String
+  flowId Int
+  flow   Flow        @relation(fields: [flowId], references: [id])
+  refs   Reference[]
+}
+
+model Reference {
+  id       Int           @id @default(autoincrement())
+  ref      ReferenceType
+  refId    Int
+  location Int
+  stepId   Int
+  step     Step          @relation(fields: [stepId], references: [id])
+}
+
+//TODO: Add versioning (history tables and look into triggers)
