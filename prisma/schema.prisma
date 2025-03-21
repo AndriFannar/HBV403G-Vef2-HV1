@@ -38,11 +38,11 @@ enum Priority {
 
 enum FlowType {
   NORMAL
-  ALT
+  ALTERNATE
   EXCEPTION
 }
 
-enum conditionType {
+enum ConditionType {
   PRECONDITION
   POSTCONDITION
 }
@@ -103,7 +103,7 @@ model Condition {
   id            Int           @id @default(autoincrement())
   publicId      String        @unique
   description   String?
-  conditionType conditionType
+  conditionType ConditionType
   useCaseId     Int
   useCase       UseCase       @relation(fields: [useCaseId], references: [id])
 }
@@ -138,6 +138,7 @@ model Step {
   refs   Reference[]
 }
 
+//TODO: Look at whether this works as a reference. Look at the UML diagram where the interface is used.
 model Reference {
   id       Int           @id @default(autoincrement())
   ref      ReferenceType
