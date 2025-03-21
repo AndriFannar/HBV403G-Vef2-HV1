@@ -1,0 +1,55 @@
+<%- include('header') -%>
+
+<form method="post" action="/form">
+  <label for="question"><%= locals.newQuestionString %></label>
+  <textarea name="question" id="question"></textarea>
+
+  <label for="category"><%= locals.categoryString %></label>
+  <select name="category" id="categorySelect">
+    <% categories.forEach((category) => { %>
+      <option value="<%= category.id %>"><%= category.name %></option>
+    <% }); %>
+    <option value="new">-- <%= locals.newCategoryString %> --</option>
+  </select>
+  <div id="newCategoryContainer" style="display:none;">
+    <label for="newCategory"><%= locals.newCategoryString %></label>
+    <input type="text" name="newCategory" id="newCategory" />
+  </div>
+
+  <div id="answers-container">
+    <div class="answer-block">
+      <label for="ans1"><%= locals.newAnswerString %> 1:</label>
+      <input type="text" name="ans1" id="ans1" />
+      <label for="correctAnswer"><%= locals.isAnswerCorrect %>:</label>
+      <input type="checkbox" name="correctAnswer" value="1" />
+    </div>
+    <div class="answer-block">
+      <label for="ans2"><%= locals.newAnswerString %> 2:</label>
+      <input type="text" name="ans2" id="ans2" />
+      <label for="correctAnswer"><%= locals.isAnswerCorrect %>:</label>
+      <input type="checkbox" name="correctAnswer" value="2" />
+    </div>
+  </div>
+
+  <% if (errors && errors.length > 0) { %>
+    <div class="error-messages">
+      <ul>
+        <% errors.forEach(error => { %>
+          <li><%= error.msg || error %></li>
+        <% }); %>
+      </ul>
+    </div>
+  <% } %>
+
+  <button type="button" id="add-answer">+</button>
+  <button type="submit"><%= locals.submitQuestion %></button>
+</form>
+
+<script>
+  window.localization = {
+    newAnswerString: "<%= locals.newAnswerString %>",
+    isAnswerCorrect: "<%= locals.isAnswerCorrect %>"
+  };
+</script>
+<script src="/createQuestion.js"></script>
+<%- include('footer') -%>

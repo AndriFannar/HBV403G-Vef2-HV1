@@ -1,16 +1,12 @@
 {
   "compileOnSave": true,
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "NodeNext",
+    "module": "Node16",
+    "target": "ES2020",
+    "moduleResolution": "node16",
     "strict": true,
-    "verbatimModuleSyntax": true,
-    "skipLibCheck": true,
-    "types": [
-      "node"
-    ],
-    "jsx": "react-jsx",
-    "jsxImportSource": "hono/jsx",
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
     "outDir": "./build"
   },
   "include": ["src/**/*.ts"],
