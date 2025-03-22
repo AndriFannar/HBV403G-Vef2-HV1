@@ -4,10 +4,10 @@
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
  * @date March 04, 2025
- * @dependencies zod
+ * @dependencies zod, @prisma/client
  */
 
-import { Role } from '@prisma/client/wasm';
+import { Role } from '@prisma/client';
 import { z } from 'zod';
 
 const minUsernameLength = 2;
@@ -45,8 +45,16 @@ export const BaseUserSchema = z.object({
  * A schema for validating a user.
  */
 export const UserSchema = BaseUserSchema.extend({
-  id: z.number(),
+  id: z.number().positive('User ID must be positive'),
   role: z.nativeEnum(Role),
+  projects: z
+    .array(z.number().positive('Project ID must be positive'))
+    .optional()
+    .default([]),
+  useCases: z
+    .array(z.number().positive('Use case ID must be positive'))
+    .optional()
+    .default([]),
 });
 
 export type BaseUser = z.infer<typeof BaseUserSchema>;

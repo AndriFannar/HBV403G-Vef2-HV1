@@ -1,0 +1,54 @@
+/**
+ * @file useCaseValidator.ts
+ * @description Validates and sanitizes a useCase.
+ * @author Andri Fannar Kristjánsson
+ * @version 1.0.0
+ * @date March 22, 2025
+ * @dependencies zod, sanitizeString, @prisma/client, useCase.js
+ */
+
+import { BaseUseCaseSchema } from '../../entities/useCase.js';
+import { Validator } from '../../entities/validator.js';
+import { sanitizeString } from './sanitizeString.js';
+import { z } from 'zod';
+
+type ValidateUseCase = z.infer<
+  ReturnType<typeof Validator<typeof BaseUseCaseSchema>>
+>;
+
+/**
+ * Validates and sanitizes a base (new) useCase.
+ * @param data - The useCase data to validate and sanitize.
+ * @returns An object with either the sanitized data or an error.
+ */
+export const validateAndSanitizeBaseUseCase = async (
+  data: unknown
+): Promise<ValidateUseCase> => {
+  const parsed = await BaseUseCaseSchema.safeParseAsync(data);
+  if (!parsed.success) {
+    return { error: parsed.error.format() };
+  }
+
+  const sanitizedData = {
+    projectId: parsed.data.projectId,
+    name: sanitizeString(parsed.data.name),
+    creatorId: parsed.data.creatorId,
+    primaryActorId: parsed.data.primaryActorId,
+    secondaryActors: parsed.data.secondaryActors,
+    description: sanitizeString(parsed.data.description),
+    trigger: sanitizeString(parsed.data.trigger),
+    conditions: parsed.data.conditions,
+    flows: parsed.data.flows,
+    priority: parsed.data.priority,
+    freqUse: parsed.data.freqUse ? sanitizeString(parsed.data.freqUse) : '',
+    businessRules: parsed.data.businessRules,
+    otherInfo: parsed.data.otherInfo
+      ? sanitizeString(parsed.data.otherInfo)
+      : '',
+    assumptions: parsed.data.assumptions
+      ? sanitizeString(parsed.data.assumptions)
+      : '',
+  };
+
+  return { data: sanitizedData };
+};
