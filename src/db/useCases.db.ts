@@ -1,34 +1,34 @@
 /**
- * @file categories.db.ts
- * @description Contains the database functions for the categories endpoint of the API.
+ * @file useCases.db.ts
+ * @description Contains the database functions for the useCases endpoint of the API.
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
- * @date March 04, 2025
- * @dependencies category.jsS, @prisma/client, logger
+ * @date March 26, 2025
+ * @dependencies useCase.js, @prisma/client
  */
 
-import type { Category, BaseCategory } from '../entities/category.js';
+import type { UseCase, BaseUseCase } from '../entities/useCase.js';
 import { PrismaClient } from '@prisma/client';
 
-const defaultNumCategories = 10;
+const defaultNumUseCases = 10;
 export const prisma = new PrismaClient();
 
 /**
- * Gets all categories.
- * @param limit - The maximum number of categories to return.
- * @param offset - The number of categories to skip.
- * @returns - All categories between the limit and offset, if provided. Otherwise, gets 10 categories.
- *            If there are no categories, returns an empty array.
+ * Gets all useCases.
+ * @param limit - The maximum number of useCases to return at a time.
+ * @param offset - The number of useCases to skip.
+ * @returns - All useCases between the limit and offset, if provided. Otherwise, gets 10 useCases.
+ *            If there are no useCases, returns an empty array.
  */
 export async function getCategories(
-  limit: number = defaultNumCategories,
+  limit: number = defaultNumUseCases,
   offset: number = 0
-): Promise<Array<Category>> {
-  const categories = await prisma.categories.findMany({
+): Promise<Array<UseCase>> {
+  const useCases = await prisma.useCase.findMany({
     skip: offset,
     take: limit,
   });
-  return categories ?? null;
+  return useCases ?? null;
 }
 
 /**

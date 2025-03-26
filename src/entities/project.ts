@@ -18,7 +18,7 @@ import { z } from 'zod';
  */
 export const BaseProjectSchema = z.object({
   name: z.string().nonempty(),
-  description: z.string(),
+  description: z.string().optional().nullable(),
   ownerId: z.number(),
 });
 

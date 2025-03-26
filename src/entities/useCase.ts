@@ -29,10 +29,10 @@ export const BaseUseCaseSchema = z.object({
   conditions: z.array(BaseConditionSchema).optional().default([]),
   flows: z.array(BaseFlowSchema).min(1, 'At least one Flow is required'),
   priority: z.nativeEnum(Priority),
-  freqUse: z.string().optional(),
+  freqUse: z.string().optional().nullable(),
   businessRules: z.array(BaseBusinessRuleSchema).optional().default([]),
-  otherInfo: z.string().optional(),
-  assumptions: z.string().optional(),
+  otherInfo: z.string().optional().nullable(),
+  assumptions: z.string().optional().nullable(),
 });
 
 /**

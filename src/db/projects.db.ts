@@ -44,7 +44,7 @@ export async function getAllProjects(
   limit: number = defaultNumProjects,
   offset: number = 0
 ): Promise<Array<Project>> {
-  const questions = await prisma.project.findMany({
+  const projects = await prisma.project.findMany({
     skip: offset,
     take: limit,
     include: {
@@ -53,7 +53,7 @@ export async function getAllProjects(
       businessRules: true,
     },
   });
-  return questions ?? null;
+  return projects ?? null;
 }
 
 /**
