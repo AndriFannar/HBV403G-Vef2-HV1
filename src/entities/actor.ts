@@ -4,9 +4,10 @@
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
  * @date March 22, 2025
- * @dependencies zod
+ * @dependencies zod, useCase.ts
  */
 
+import { UseCaseSchema } from './useCase.js';
 import { z } from 'zod';
 
 /**
@@ -23,14 +24,8 @@ export const BaseActorSchema = z.object({
  */
 export const ActorSchema = BaseActorSchema.extend({
   id: z.number().positive('ID must be a positive number'),
-  useCasesPrimary: z
-    .array(z.number().positive('Use case ID must be positive'))
-    .optional()
-    .default([]),
-  useCasesSecondary: z
-    .array(z.number().positive('Use case ID must be positive'))
-    .optional()
-    .default([]),
+  useCasesPrimary: z.array(UseCaseSchema).optional().default([]),
+  useCasesSecondary: z.array(UseCaseSchema).optional().default([]),
 });
 
 export type BaseActor = z.infer<typeof BaseActorSchema>;

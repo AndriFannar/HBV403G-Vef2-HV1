@@ -18,7 +18,7 @@ import { z } from 'zod';
 export const BaseFlowSchema = z.object({
   name: z.string().min(1, 'Flow name is required'),
   flowType: z.nativeEnum(FlowType),
-  steps: z.array(StepSchema),
+  steps: z.array(StepSchema).length(1, 'A flow must have at least one step'),
   useCaseId: z.number().positive('Use case ID must be positive'),
 });
 

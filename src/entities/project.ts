@@ -4,9 +4,12 @@
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
  * @date March 22, 2025
- * @dependencies zod, slug.js
+ * @dependencies zod, slug.js, useCase.js, actor.js, businessRule.js
  */
 
+import { BaseBusinessRuleSchema } from './businessRule.js';
+import { BaseUseCaseSchema } from './useCase.js';
+import { BaseActorSchema } from './actor.js';
 import { SlugSchema } from './slug.js';
 import { z } from 'zod';
 
@@ -25,9 +28,9 @@ export const BaseProjectSchema = z.object({
 export const ProjectSchema = BaseProjectSchema.extend({
   id: z.number(),
   slug: SlugSchema,
-  useCases: z.array(z.number()).optional(),
-  actors: z.array(z.number()).optional(),
-  businessRules: z.array(z.number()).optional(),
+  useCases: z.array(BaseUseCaseSchema).optional(),
+  actors: z.array(BaseActorSchema).optional(),
+  businessRules: z.array(BaseBusinessRuleSchema).optional(),
 });
 
 export type BaseProject = z.infer<typeof BaseProjectSchema>;

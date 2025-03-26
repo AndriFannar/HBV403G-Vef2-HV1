@@ -4,9 +4,13 @@
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
  * @date March 22, 2025
- * @dependencies zod, slug.js, @prisma/client
+ * @dependencies zod, slug.js, @prisma/client, businessRule.js, condition.js, actor.js, flow.js
  */
 
+import { BaseBusinessRuleSchema } from './businessRule.js';
+import { BaseConditionSchema } from './condition.js';
+import { BaseActorSchema } from './actor.js';
+import { BaseFlowSchema } from './flow.js';
 import { Priority } from '@prisma/client';
 import { SlugSchema } from './slug.js';
 import { z } from 'zod';
@@ -19,25 +23,14 @@ export const BaseUseCaseSchema = z.object({
   name: z.string().min(1, 'Use case name is required'),
   creatorId: z.number().positive('Creator ID must be positive'),
   primaryActorId: z.number().positive('Primary actor ID must be positive'),
-  secondaryActors: z
-    .array(z.number().positive('Actor ID must be positive'))
-    .optional()
-    .default([]),
+  secondaryActors: z.array(BaseActorSchema).optional().default([]),
   description: z.string().min(1, 'Description is required'),
   trigger: z.string().min(1, 'Trigger is required'),
-  conditions: z
-    .array(z.number().positive('Condition ID must be positive'))
-    .optional()
-    .default([]),
-  flows: z
-    .array(z.number().positive('Flow ID must be positive'))
-    .min(1, 'At least one Flow is required'),
+  conditions: z.array(BaseConditionSchema).optional().default([]),
+  flows: z.array(BaseFlowSchema).min(1, 'At least one Flow is required'),
   priority: z.nativeEnum(Priority),
   freqUse: z.string().optional(),
-  businessRules: z
-    .array(z.number().positive('Business rule ID must be positive'))
-    .optional()
-    .default([]),
+  businessRules: z.array(BaseBusinessRuleSchema).optional().default([]),
   otherInfo: z.string().optional(),
   assumptions: z.string().optional(),
 });

@@ -1,32 +1,31 @@
 /**
- * @file questions.db.ts
- * @description Contains the database functions for the questions endpoint of the API.
+ * @file projects.db.ts
+ * @description Contains the database functions for the projects endpoint of the API.
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
- * @date March 04, 2025
- * @dependencies questions.js, category.js, @prisma/client, crypto
+ * @date March 26, 2025
+ * @dependencies
  */
 
-import type { Question, BaseQuestion } from '../entities/question.js';
+import type { Project, BaseProject } from '../entities/project.js';
 import { PrismaClient } from '@prisma/client';
-import { randomInt } from 'crypto';
 
-const maxRandint = 281474976710655;
 const maxSlugLength = 64;
-const defaultNumQuestions = 10;
+const defaultNumProjects = 10;
+
 export const prisma = new PrismaClient();
 
 /**
- * Generates a slug for a question.
- * @param question - The question string to generate a slug for.
- * @param id - The id of the question.
+ * Generates a slug for a project.
+ * @param projectName - The projectName string to generate a slug for.
+ * @param id - The id of the project.
  * @returns - The generated slug.
  */
-function generateSlug(question: string, id: number): string {
+function generateSlug(projectName: string, id: number): string {
   return (
     id.toString() +
     '-' +
-    question
+    projectName
       .toLowerCase()
       .replaceAll(' ', '-')
       .replaceAll(/[^a-z0-9-]/g, '')
@@ -35,21 +34,23 @@ function generateSlug(question: string, id: number): string {
 }
 
 /**
- * Gets all questions.
- * @param limit - The maximum number of questions to return.
- * @param offset - The number of questions to skip.
- * @returns - All questions between the limit and offset, if provided. Otherwise, gets 10 questions.
- *            If there are no questions, returns an empty array.
+ * Gets all projects.
+ * @param limit - The maximum number of projects to return at a time.
+ * @param offset - The number of projects to skip.
+ * @returns - All projects between the limit and offset, if provided. Otherwise, gets 10 projects.
+ *            If there are no projects, returns an empty array.
  */
-export async function getAllQuestions(
-  limit: number = defaultNumQuestions,
+export async function getAllProjects(
+  limit: number = defaultNumProjects,
   offset: number = 0
-): Promise<Array<Question>> {
-  const questions = await prisma.questions.findMany({
+): Promise<Array<Project>> {
+  const questions = await prisma.project.findMany({
     skip: offset,
     take: limit,
     include: {
-      answers: true,
+      useCases: true,
+      actors: true,
+      businessRules: true,
     },
   });
   return questions ?? null;

@@ -8,7 +8,7 @@
  */
 
 import { Referencible } from './referencible.js';
-import { ConditionType } from '@prisma/client';
+import { conditionType } from '@prisma/client';
 import { z } from 'zod';
 
 /**
@@ -16,7 +16,7 @@ import { z } from 'zod';
  */
 export const BaseConditionSchema = z.object({
   description: z.string().min(1, 'Description is required'),
-  conditionType: z.nativeEnum(ConditionType),
+  conditionType: z.nativeEnum(conditionType),
   useCaseId: z.number().positive('Use case ID must be positive'),
 });
 

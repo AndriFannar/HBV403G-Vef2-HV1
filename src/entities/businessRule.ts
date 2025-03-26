@@ -4,10 +4,11 @@
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
  * @date March 22, 2025
- * @dependencies zod, @prisma/client, ./referencible.js
+ * @dependencies zod, @prisma/client, ./referencible.js, ./useCase.js
  */
 
 import { Mutability, RuleType } from '@prisma/client';
+import { BaseUseCaseSchema } from './useCase.js';
 import { Referencible } from './referencible.js';
 import { z } from 'zod';
 
@@ -27,10 +28,7 @@ export const BaseBusinessRuleSchema = z.object({
  */
 export const BusinessRuleSchema = BaseBusinessRuleSchema.extend({
   id: z.number().positive('ID must be a positive number'),
-  useCases: z
-    .array(z.number().positive('Use case ID must be positive'))
-    .optional()
-    .default([]),
+  useCases: z.array(BaseUseCaseSchema).optional().default([]),
 }).merge(Referencible);
 
 export type BaseBusinessRule = z.infer<typeof BaseBusinessRuleSchema>;

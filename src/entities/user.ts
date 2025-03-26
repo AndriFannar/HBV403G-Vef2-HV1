@@ -4,9 +4,11 @@
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
  * @date March 04, 2025
- * @dependencies zod, @prisma/client
+ * @dependencies zod, @prisma/client, ./useCase.js, ./project.js
  */
 
+import { BaseUseCaseSchema } from './useCase.js';
+import { BaseProjectSchema } from './project.js';
 import { Role } from '@prisma/client';
 import { z } from 'zod';
 
@@ -47,14 +49,8 @@ export const BaseUserSchema = z.object({
 export const UserSchema = BaseUserSchema.extend({
   id: z.number().positive('User ID must be positive'),
   role: z.nativeEnum(Role),
-  projects: z
-    .array(z.number().positive('Project ID must be positive'))
-    .optional()
-    .default([]),
-  useCases: z
-    .array(z.number().positive('Use case ID must be positive'))
-    .optional()
-    .default([]),
+  projects: z.array(BaseProjectSchema).optional().default([]),
+  useCases: z.array(BaseUseCaseSchema).optional().default([]),
 });
 
 export type BaseUser = z.infer<typeof BaseUserSchema>;
