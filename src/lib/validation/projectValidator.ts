@@ -31,7 +31,9 @@ export const validateAndSanitizeBaseProject = async (
 
   const sanitizedData = {
     name: sanitizeString(parsed.data.name),
-    description: sanitizeString(parsed.data.description),
+    description: parsed.data.description
+      ? sanitizeString(parsed.data.description)
+      : '',
     ownerId: parsed.data.ownerId,
   };
 

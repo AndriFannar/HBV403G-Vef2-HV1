@@ -7,13 +7,13 @@
  * @dependencies zod, sanitizeString, @prisma/client, condition.js
  */
 
-import { BaseConditionSchema } from '../../entities/condition.js';
+import { NewConditionSchema } from '../../entities/condition.js';
 import { Validator } from '../../entities/validator.js';
 import { sanitizeString } from './sanitizeString.js';
 import { z } from 'zod';
 
 type ValidateCondition = z.infer<
-  ReturnType<typeof Validator<typeof BaseConditionSchema>>
+  ReturnType<typeof Validator<typeof NewConditionSchema>>
 >;
 
 /**
@@ -24,7 +24,7 @@ type ValidateCondition = z.infer<
 export const validateAndSanitizeBaseCondition = async (
   data: unknown
 ): Promise<ValidateCondition> => {
-  const parsed = await BaseConditionSchema.safeParseAsync(data);
+  const parsed = await NewConditionSchema.safeParseAsync(data);
   if (!parsed.success) {
     return { error: parsed.error.format() };
   }

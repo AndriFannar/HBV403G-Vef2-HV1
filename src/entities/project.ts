@@ -31,6 +31,7 @@ export const ProjectSchema = BaseProjectSchema.extend({
   useCases: z.array(BaseUseCaseSchema).optional(),
   actors: z.array(BaseActorSchema).optional(),
   businessRules: z.array(BaseBusinessRuleSchema).optional(),
+  businessRuleCount: z.number().default(0),
 });
 
 export type BaseProject = z.infer<typeof BaseProjectSchema>;

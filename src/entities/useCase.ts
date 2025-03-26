@@ -4,16 +4,18 @@
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
  * @date March 22, 2025
- * @dependencies zod, slug.js, @prisma/client, businessRule.js, condition.js, actor.js, flow.js
+ * @dependencies zod, slug.js, @prisma/client, businessRule.js, condition.js, actor.js, flow.js, referencible.js
  */
 
 import { BaseBusinessRuleSchema } from './businessRule.js';
-import { BaseConditionSchema } from './condition.js';
+import { NewConditionSchema } from './condition.js';
+import { Referencible } from './referencible.js';
 import { BaseActorSchema } from './actor.js';
-import { BaseFlowSchema } from './flow.js';
+import { NewFlowSchema } from './flow.js';
 import { Priority } from '@prisma/client';
 import { SlugSchema } from './slug.js';
 import { z } from 'zod';
+import { UseCaseSequenceSchema } from './useCaseSequence.js';
 
 /**
  * A schema for validating a base use case.
@@ -26,8 +28,10 @@ export const BaseUseCaseSchema = z.object({
   secondaryActors: z.array(BaseActorSchema).optional().default([]),
   description: z.string().min(1, 'Description is required'),
   trigger: z.string().min(1, 'Trigger is required'),
-  conditions: z.array(BaseConditionSchema).optional().default([]),
-  flows: z.array(BaseFlowSchema).min(1, 'At least one Flow is required'),
+  conditions: z
+    .array(NewConditionSchema)
+    .length(1, 'At least one postcondition is required'),
+  flows: z.array(NewFlowSchema).min(1, 'At least one Normal Flow is required'),
   priority: z.nativeEnum(Priority),
   freqUse: z.string().optional().nullable(),
   businessRules: z.array(BaseBusinessRuleSchema).optional().default([]),
@@ -43,7 +47,8 @@ export const UseCaseSchema = BaseUseCaseSchema.extend({
   slug: SlugSchema,
   dateCreated: z.date(),
   dateModified: z.date(),
-});
+  useCaseSequences: z.array(UseCaseSequenceSchema),
+}).merge(Referencible);
 
 export type BaseUseCase = z.infer<typeof BaseUseCaseSchema>;
 export type UseCase = z.infer<typeof UseCaseSchema>;

@@ -47,6 +47,13 @@ enum ConditionType {
   POSTCONDITION
 }
 
+enum EntityType {
+  ALTERNATEFLOW
+  EXCEPTIONFLOW
+  PRECONDITION
+  POSTCONDITION
+}
+
 model User {
   id       Int       @id @default(autoincrement())
   username String    @unique
@@ -57,15 +64,16 @@ model User {
 }
 
 model Project {
-  id            Int            @id @default(autoincrement())
-  slug          String
-  name          String
-  description   String?
-  ownerId       Int
-  owner         User           @relation(fields: [ownerId], references: [id])
-  useCases      UseCase[]
-  actors        Actor[]
-  businessRules BusinessRule[]
+  id                Int            @id @default(autoincrement())
+  slug              String
+  name              String
+  description       String?
+  ownerId           Int
+  owner             User           @relation(fields: [ownerId], references: [id])
+  useCases          UseCase[]
+  actors            Actor[]
+  businessRules     BusinessRule[]
+  businessRuleCount Int            @default(0)
 }
 
 model Actor {
@@ -78,37 +86,53 @@ model Actor {
   useCasesSecondary UseCase[] @relation("UseCaseSecondaryActors")
 }
 
+model UseCaseSequence {
+  id         Int        @id @default(autoincrement())
+  useCaseId  Int
+  useCase    UseCase    @relation(fields: [useCaseId], references: [id])
+  entityType EntityType
+  count      Int
+
+  @@unique([useCaseId, entityType])
+}
+
 model UseCase {
-  id              Int            @id @default(autoincrement())
-  publicId        String
-  slug            String
-  projectId       Int
-  project         Project        @relation(fields: [projectId], references: [id])
-  name            String
-  creatorId       Int
-  creator         User           @relation(fields: [creatorId], references: [id])
-  dateCreated     DateTime       @default(now())
-  dateModified    DateTime       @updatedAt
-  primaryActorId  Int
-  primaryActor    Actor          @relation("PrimaryActor", fields: [primaryActorId], references: [id])
-  secondaryActors Actor[]        @relation("UseCaseSecondaryActors")
-  description     String?
-  trigger         String
-  conditions      Condition[]
-  flows           Flow[]
-  priority        Priority       @default(NORMAL)
-  freqUse         String
-  businessRules   BusinessRule[]
-  otherInfo       String[]
-  assumptions     String[]
+  id               Int               @id @default(autoincrement())
+  publicId         String
+  slug             String
+  projectId        Int
+  project          Project           @relation(fields: [projectId], references: [id])
+  name             String
+  creatorId        Int
+  creator          User              @relation(fields: [creatorId], references: [id])
+  dateCreated      DateTime          @default(now())
+  dateModified     DateTime          @updatedAt
+  primaryActorId   Int
+  primaryActor     Actor             @relation("PrimaryActor", fields: [primaryActorId], references: [id])
+  secondaryActors  Actor[]           @relation("UseCaseSecondaryActors")
+  description      String?
+  trigger          String
+  conditions       Condition[]
+  flows            Flow[]
+  useCaseSequences UseCaseSequence[]
+  priority         Priority          @default(NORMAL)
+  freqUse          String
+  businessRules    BusinessRule[]
+  otherInfo        String[]
+  assumptions      String[]
+
+  @@unique([projectId, publicId])
 }
 
 model Condition {
   id            Int           @id @default(autoincrement())
   publicId      String
-  description   String?
+  description   String
   conditionType ConditionType
-  useCases      UseCase[]
+  useCaseId     Int
+  useCases      UseCase       @relation(fields: [useCaseId], references: [id])
+
+  @@unique([useCaseId, publicId])
 }
 
 model BusinessRule {
@@ -121,6 +145,8 @@ model BusinessRule {
   useCases   UseCase[]
   projectId  Int
   project    Project    @relation(fields: [projectId], references: [id])
+
+  @@unique([projectId, publicId])
 }
 
 model Flow {
@@ -128,18 +154,24 @@ model Flow {
   publicId  String
   name      String
   flowType  FlowType
+  forFlowId Int?
   useCaseId Int
   useCase   UseCase  @relation(fields: [useCaseId], references: [id])
   steps     Step[]
+  stepCount Int      @default(0)
+
+  @@unique([useCaseId, publicId])
 }
 
 model Step {
   id       Int         @id @default(autoincrement())
-  publicId Int
+  publicId String
   step     String
   flowId   Int
   flow     Flow        @relation(fields: [flowId], references: [id])
   refs     Reference[]
+
+  @@unique([flowId, publicId])
 }
 
 model Reference {

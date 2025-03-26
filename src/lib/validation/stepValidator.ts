@@ -7,13 +7,13 @@
  * @dependencies zod, sanitizeString, @prisma/client, step.js
  */
 
-import { BaseStepSchema } from '../../entities/step.js';
+import { NewStepSchema } from '../../entities/step.js';
 import { Validator } from '../../entities/validator.js';
 import { sanitizeString } from './sanitizeString.js';
 import { z } from 'zod';
 
 type ValidateStep = z.infer<
-  ReturnType<typeof Validator<typeof BaseStepSchema>>
+  ReturnType<typeof Validator<typeof NewStepSchema>>
 >;
 
 /**
@@ -24,7 +24,7 @@ type ValidateStep = z.infer<
 export const validateAndSanitizeBaseStep = async (
   data: unknown
 ): Promise<ValidateStep> => {
-  const parsed = await BaseStepSchema.safeParseAsync(data);
+  const parsed = await NewStepSchema.safeParseAsync(data);
   if (!parsed.success) {
     return { error: parsed.error.format() };
   }
