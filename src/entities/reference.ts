@@ -13,7 +13,7 @@ import { z } from 'zod';
 /**
  * A schema for validating new references.
  */
-export const BaseReferenceSchema = z.object({
+export const NewReferenceSchema = z.object({
   refType: z.nativeEnum(ReferenceType),
   refId: z.number().positive('Reference ID must be positive'),
   location: z.number().nonnegative('Location must be zero or positive'),
@@ -23,9 +23,9 @@ export const BaseReferenceSchema = z.object({
 /**
  * A schema for validating references.
  */
-export const ReferenceSchema = BaseReferenceSchema.extend({
+export const ReferenceSchema = NewReferenceSchema.extend({
   id: z.number().positive('ID must be a positive number'),
 });
 
-export type BaseReference = z.infer<typeof BaseReferenceSchema>;
+export type NewReference = z.infer<typeof NewReferenceSchema>;
 export type Reference = z.infer<typeof ReferenceSchema>;

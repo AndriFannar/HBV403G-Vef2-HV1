@@ -7,13 +7,13 @@
  * @dependencies zod, sanitizeString, @prisma/client, useCase.js
  */
 
-import { BaseUseCaseSchema } from '../../entities/useCase.js';
+import { NewUseCaseSchema } from '../../entities/useCase.js';
 import { Validator } from '../../entities/validator.js';
 import { sanitizeString } from './sanitizeString.js';
 import { z } from 'zod';
 
 type ValidateUseCase = z.infer<
-  ReturnType<typeof Validator<typeof BaseUseCaseSchema>>
+  ReturnType<typeof Validator<typeof NewUseCaseSchema>>
 >;
 
 /**
@@ -24,7 +24,7 @@ type ValidateUseCase = z.infer<
 export const validateAndSanitizeBaseUseCase = async (
   data: unknown
 ): Promise<ValidateUseCase> => {
-  const parsed = await BaseUseCaseSchema.safeParseAsync(data);
+  const parsed = await NewUseCaseSchema.safeParseAsync(data);
   if (!parsed.success) {
     return { error: parsed.error.format() };
   }

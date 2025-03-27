@@ -7,7 +7,7 @@
  * @dependencies zod, @prisma/client
  */
 
-import { EntityType } from '@prisma/client';
+import { UseCaseCounterType } from '@prisma/client';
 import { z } from 'zod';
 
 /**
@@ -16,7 +16,7 @@ import { z } from 'zod';
 export const UseCaseSequenceSchema = z.object({
   id: z.number().positive('ID must be a positive number'),
   useCaseId: z.number().positive('Use case ID must be a positive number'),
-  entityType: z.nativeEnum(EntityType),
+  entityType: z.nativeEnum(UseCaseCounterType),
   count: z.number().default(0),
 });
 

@@ -14,6 +14,7 @@ import { z } from 'zod';
  * A schema for validating a new actor.
  */
 export const NewActorSchema = z.object({
+  id: z.number().optional().nullable(),
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional().nullable(),
   projectId: z.number().positive('Project ID must be a positive number'),

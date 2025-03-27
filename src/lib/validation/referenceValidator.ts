@@ -7,12 +7,12 @@
  * @dependencies zod, @prisma/client, reference.js
  */
 
-import { BaseReferenceSchema } from '../../entities/reference.js';
+import { NewReferenceSchema } from '../../entities/reference.js';
 import { Validator } from '../../entities/validator.js';
 import { z } from 'zod';
 
 type ValidateReference = z.infer<
-  ReturnType<typeof Validator<typeof BaseReferenceSchema>>
+  ReturnType<typeof Validator<typeof NewReferenceSchema>>
 >;
 
 /**
@@ -23,7 +23,7 @@ type ValidateReference = z.infer<
 export const validateAndSanitizeBaseReference = async (
   data: unknown
 ): Promise<ValidateReference> => {
-  const parsed = await BaseReferenceSchema.safeParseAsync(data);
+  const parsed = await NewReferenceSchema.safeParseAsync(data);
   if (!parsed.success) {
     return { error: parsed.error.format() };
   }

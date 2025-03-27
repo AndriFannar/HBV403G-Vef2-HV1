@@ -7,7 +7,7 @@
  * @dependencies user.js, @prisma/client, logger
  */
 
-import type { User, BaseUser } from '../entities/user.js';
+import type { User, NewUser } from '../entities/user.js';
 import { PrismaClient } from '@prisma/client';
 
 export const prisma = new PrismaClient();
@@ -51,7 +51,7 @@ export async function getUser(username: string): Promise<User | null> {
  * @param user - The base user to create.
  * @returns - The created user.
  */
-export async function createUser(user: BaseUser): Promise<User> {
+export async function createUser(user: NewUser): Promise<User> {
   const newUser = await prisma.user.create({
     data: {
       username: user.username,

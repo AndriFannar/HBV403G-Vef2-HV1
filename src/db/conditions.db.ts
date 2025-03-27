@@ -4,62 +4,16 @@
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
  * @date March 26, 2025
- * @dependencies @prisma/client, condition.js
+ * @dependencies @prisma/client, condition.js, publicIdGenerators.js
  */
 
 import type { Condition, NewCondition } from '../entities/condition.js';
-import {
-  Prisma,
-  EntityType,
-  PrismaClient,
-  ConditionType,
-} from '@prisma/client';
+import { generateConditionPublicId } from './publicIdGenerators.js';
+import { PrismaClient, ConditionType } from '@prisma/client';
 
 const defaultNumConditions = 10;
 
 export const prisma = new PrismaClient();
-
-/**
- * Generates a public ID for a new condition.
- * @param tx - The Prisma transaction client.
- * @param condition - The new condition to generate a public ID for.
- * @returns - The generated public ID for the condition.
- */
-async function generateConditionPublicId(
-  tx: Prisma.TransactionClient,
-  condition: NewCondition
-): Promise<string> {
-  const conditionType =
-    condition.conditionType === ConditionType.PRECONDITION
-      ? EntityType.PRECONDITION
-      : EntityType.POSTCONDITION;
-
-  const useCaseSequence = await tx.useCaseSequence.findUnique({
-    where: {
-      // eslint-disable-next-line camelcase
-      useCaseId_entityType: {
-        useCaseId: condition.useCaseId,
-        entityType: conditionType,
-      },
-    },
-  });
-
-  if (!useCaseSequence) {
-    throw new Error('UseCaseSequence not found');
-  }
-
-  const newCount = useCaseSequence.count + 1;
-  await tx.useCaseSequence.update({
-    where: { id: useCaseSequence.id },
-    data: { count: newCount },
-  });
-
-  if (condition.conditionType === ConditionType.PRECONDITION) {
-    return `PRE-${newCount}`;
-  } else {
-    return `POST-${newCount}`;
-  }
-}
 
 /**
  * Gets all conditions.

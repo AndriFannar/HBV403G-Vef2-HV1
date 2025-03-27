@@ -4,101 +4,512 @@
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
  * @date March 26, 2025
- * @dependencies useCase.js, @prisma/client
+ * @dependencies @prisma/client, useCase.js, publicIdGenerators.js, crypto
  */
 
-import type { UseCase, BaseUseCase } from '../entities/useCase.js';
-import { PrismaClient } from '@prisma/client';
+import type { UseCase, NewUseCase, BaseUseCase } from '../entities/useCase.js';
+import { Prisma, PrismaClient, ProjectCounterType } from '@prisma/client';
+import { randomInt } from 'crypto';
+import {
+  generateBusinessRulePublicId,
+  generateConditionPublicId,
+  generateFlowPublicId,
+} from './publicIdGenerators.js';
 
+const maxRandint = 281474976710655;
 const defaultNumUseCases = 10;
+const maxSlugLength = 50;
+
 export const prisma = new PrismaClient();
 
 /**
- * Gets all useCases.
- * @param limit - The maximum number of useCases to return at a time.
- * @param offset - The number of useCases to skip.
- * @returns - All useCases between the limit and offset, if provided. Otherwise, gets 10 useCases.
- *            If there are no useCases, returns an empty array.
+ * Generates a public ID for a new UseCase.
+ * @param tx - The Prisma transaction client.
+ * @param useCase - The new UseCase to generate a public ID for.
+ * @returns - The generated public ID for the UseCase.
  */
-export async function getCategories(
+async function generateUseCasePublicId(
+  tx: Prisma.TransactionClient,
+  useCase: NewUseCase
+): Promise<string> {
+  const projectSequence = await tx.projectSequence.findUnique({
+    where: {
+      // eslint-disable-next-line camelcase
+      projectId_entityType: {
+        projectId: useCase.projectId,
+        entityType: ProjectCounterType.USECASE,
+      },
+    },
+  });
+
+  if (!projectSequence) {
+    throw new Error('ProjectSequence not found');
+  }
+
+  const newCount = projectSequence.count + 1;
+  await tx.useCaseSequence.update({
+    where: { id: projectSequence.id },
+    data: { count: newCount },
+  });
+
+  return `UC-${newCount}`;
+}
+
+/**
+ * Generates a slug for a UseCase.
+ * @param name - The name of the UseCase.
+ * @param id - The ID of the UseCase.
+ * @param publicId - The public ID of the UseCase.
+ * @returns - The generated slug.
+ */
+function generateSlug(name: string, id: number, publicId: string): string {
+  return (
+    id.toString() +
+    '-' +
+    publicId +
+    ':' +
+    name
+      .toLowerCase()
+      .replaceAll(' ', '-')
+      .replaceAll(/[^a-z0-9-]/g, '')
+      .slice(0, maxSlugLength - id.toString().length - 1)
+  );
+}
+
+/**
+ * Gets all flows.
+ * @param limit - The maximum number of flows to return at a time.
+ * @param offset - The number of flows to skip.
+ * @returns - All flows between the limit and offset, if provided. Otherwise, gets 10 flows.
+ *            If there are no flows, returns an empty array.
+ */
+export async function getAllUseCases(
   limit: number = defaultNumUseCases,
   offset: number = 0
-): Promise<Array<UseCase>> {
+): Promise<Array<BaseUseCase>> {
   const useCases = await prisma.useCase.findMany({
     skip: offset,
     take: limit,
   });
-  return useCases ?? null;
+  return useCases ?? [];
 }
 
 /**
- * Gets a category by slug.
- * @param slug - The slug of the category to get.
- * @returns - The category with the given slug or null if not found.
+ * Gets base useCases by a user ID.
+ * @param userId - The ID of the user to get the useCases for.
+ * @returns - The useCases for the user ID, if they exist. Otherwise, returns an empty array.
  */
-export async function getCategory(slug: string): Promise<Category | null> {
-  const category = await prisma.categories.findFirst({
+export async function getUseCasesSummaryByUserId(
+  userId: number
+): Promise<Array<BaseUseCase>> {
+  const useCases = await prisma.useCase.findMany({
     where: {
-      slug: slug,
+      creatorId: userId,
     },
+  });
+  return useCases ?? [];
+}
+
+/**
+ * Gets base useCases by a project ID.
+ * @param projectId - The ID of the project to get the useCases for.
+ * @returns - The useCases for the project ID, if they exist. Otherwise, returns an empty array.
+ */
+export async function getUseCasesSummaryByProjectId(
+  projectId: number
+): Promise<Array<BaseUseCase>> {
+  const useCases = await prisma.useCase.findMany({
+    where: {
+      projectId: projectId,
+    },
+  });
+  return useCases ?? [];
+}
+
+/**
+ * Gets useCases by a project ID.
+ * @param projectId - The ID of the project to get the useCases for.
+ * @returns - The useCases for the project ID, if they exist. Otherwise, returns an empty array.
+ */
+export async function getFullUseCasesByProjectId(
+  projectId: number,
+  limit: number = defaultNumUseCases,
+  offset: number = 0
+): Promise<UseCase[]> {
+  const useCases = await prisma.useCase.findMany({
+    where: { projectId: projectId },
+    skip: offset,
+    take: limit,
     include: {
-      questions: {
+      conditions: true,
+      flows: {
         include: {
-          answers: true,
+          steps: {
+            include: {
+              refs: true,
+            },
+          },
         },
       },
+      businessRules: true,
+      secondaryActors: true,
+      useCaseSequences: true,
     },
   });
-  return category ?? null;
+  return useCases ?? [];
 }
 
 /**
- * Creates a new category.
- * @param category - The base category to create.
- * @returns - The created category.
+ * Gets a useCase by ID.
+ * @param id - The ID of the useCase to fetch.
+ * @returns - The useCase corresponding to given ID, if it exists. Otherwise, returns null.
  */
-export async function createCategory(
-  category: BaseCategory
-): Promise<Category> {
-  const newCategory = await prisma.categories.create({
-    data: {
-      name: category.name,
-      slug: category.name.toLowerCase().replaceAll(' ', '-'),
+export async function getUseCaseById(id: number): Promise<UseCase | null> {
+  const useCase = await prisma.useCase.findFirst({
+    where: { id: id },
+    include: {
+      conditions: true,
+      flows: {
+        include: {
+          steps: {
+            include: {
+              refs: true,
+            },
+          },
+        },
+      },
+      businessRules: true,
+      secondaryActors: true,
+      useCaseSequences: true,
     },
   });
-  return newCategory;
+  return useCase ?? null;
+}
+
+async function verifyNestedRelations(
+  tx: Prisma.TransactionClient,
+  useCase: NewUseCase
+) {
+  let conditionsData;
+  try {
+    conditionsData = await Promise.all(
+      useCase.conditions.map(async c => ({
+        description: c.description,
+        conditionType: c.conditionType,
+        publicId: await generateConditionPublicId(tx, c),
+      }))
+    );
+  } catch (error) {
+    throw new Error('Error creating conditions:' + error);
+  }
+
+  let flowsData;
+  try {
+    flowsData = await Promise.all(
+      useCase.flows.map(async f => ({
+        name: f.name,
+        flowType: f.flowType,
+        steps: {
+          create: f.steps.map((s, i) => ({
+            step: s.step,
+            publicId: `${i + 1}.`,
+            refs: {
+              create: s.refs.map(r => ({
+                refType: r.refType,
+                refId: r.refId,
+                location: r.location,
+              })),
+            },
+          })),
+        },
+        publicId: await generateFlowPublicId(tx, f),
+      }))
+    );
+  } catch (error) {
+    throw new Error('Error creating flows:' + error);
+  }
+
+  const primaryActor = await prisma.actor.findUnique({
+    where: { id: useCase.primaryActorId },
+    select: { projectId: true },
+  });
+  if (!primaryActor) {
+    throw new Error(
+      `Primary actor with id ${useCase.primaryActorId} not found`
+    );
+  }
+  if (primaryActor.projectId !== useCase.projectId) {
+    throw new Error(
+      `Primary actor with id ${useCase.primaryActorId} does not belong to the specified project`
+    );
+  }
+
+  let actorsConnect;
+  try {
+    actorsConnect = await Promise.all(
+      useCase.secondaryActors
+        .filter(act => act.id !== null)
+        .map(async act => {
+          const id = act.id!;
+          const existingAct = await prisma.actor.findUnique({
+            where: { id: id },
+            select: { projectId: true },
+          });
+          if (!existingAct) {
+            throw new Error(`Actor with id ${id} not found`);
+          }
+          if (existingAct.projectId !== useCase.projectId) {
+            throw new Error(
+              `Actor with id ${id} does not belong to the specified project`
+            );
+          }
+          return { id: id };
+        })
+    );
+  } catch (error) {
+    throw new Error('Error connecting actors:' + error);
+  }
+
+  let actorsCreate;
+  try {
+    actorsCreate = useCase.secondaryActors
+      .filter(act => act.id === null)
+      .map(act => ({
+        name: act.name,
+        description: act.description,
+        project: { connect: { id: useCase.projectId } },
+      }));
+  } catch (error) {
+    throw new Error('Error creating actors:' + error);
+  }
+
+  let businessRulesConnect;
+  try {
+    businessRulesConnect = await Promise.all(
+      useCase.businessRules
+        .filter(br => br.id !== null)
+        .map(async br => {
+          const id = br.id!;
+          const existingBR = await prisma.businessRule.findUnique({
+            where: { id: id },
+            select: { projectId: true, publicId: true },
+          });
+          if (!existingBR) {
+            throw new Error(`BusinessRule with id ${id} not found`);
+          }
+          if (existingBR.projectId !== useCase.projectId) {
+            throw new Error(
+              `BusinessRule with id ${id} does not belong to the specified project`
+            );
+          }
+          return {
+            // eslint-disable-next-line camelcase
+            projectId_publicId: {
+              projectId: existingBR.projectId,
+              publicId: existingBR.publicId,
+            },
+          };
+        })
+    );
+  } catch (error) {
+    throw new Error('Error connecting business rules:' + error);
+  }
+
+  let businessRulesCreate;
+  try {
+    businessRulesCreate = await Promise.all(
+      useCase.businessRules
+        .filter(br => br.id === null)
+        .map(async br => {
+          const publicId = await generateBusinessRulePublicId(tx, br);
+          return {
+            ruleDef: br.ruleDef,
+            type: br.type,
+            mutability: br.mutability,
+            source: br.source,
+            publicId,
+            project: { connect: { id: br.projectId } },
+          };
+        })
+    );
+  } catch (error) {
+    throw new Error('Error creating business rules:' + error);
+  }
+
+  return {
+    conditionsData,
+    flowsData,
+    actorsConnect,
+    actorsCreate,
+    businessRulesConnect,
+    businessRulesCreate,
+  };
 }
 
 /**
- * Updates a category.
- * @param slug - The slug of the category to update.
- * @param category - The updated category.
- * @returns - The updated category.
+ * Creates a new useCase.
+ * @param useCase - The new useCase to create.
+ * @returns - The created useCase.
  */
-export async function updateCategory(
-  slug: string,
-  category: BaseCategory
-): Promise<Category> {
-  const updatedCategory = await prisma.categories.update({
-    where: {
-      slug: slug,
-    },
-    data: {
-      name: category.name,
-      slug: category.name.toLowerCase().replaceAll(' ', '-'),
-    },
+export async function createUseCase(useCase: NewUseCase): Promise<UseCase> {
+  return await prisma.$transaction(async tx => {
+    const publicId = await generateUseCasePublicId(tx, useCase);
+
+    let verifiedData;
+    try {
+      verifiedData = await verifyNestedRelations(tx, useCase);
+    } catch (error) {
+      throw new Error('Error verifying nested relations:' + error);
+    }
+
+    const createdUseCase = await tx.useCase.create({
+      data: {
+        projectId: useCase.projectId,
+        publicId: publicId,
+        slug: randomInt(maxRandint).toString(),
+        name: useCase.name,
+        creatorId: useCase.creatorId,
+        primaryActorId: useCase.primaryActorId,
+        secondaryActors: {
+          connect: verifiedData.actorsConnect,
+          create: verifiedData.actorsCreate,
+        },
+        description: useCase.description,
+        trigger: useCase.trigger,
+        conditions: {
+          create: verifiedData.conditionsData,
+        },
+        flows: {
+          create: verifiedData.flowsData,
+        },
+        priority: useCase.priority,
+        freqUse: useCase.freqUse ? useCase.freqUse : '',
+        businessRules: {
+          connect: verifiedData.businessRulesConnect,
+          create: verifiedData.businessRulesCreate,
+        },
+        otherInfo: useCase.otherInfo?.length ? useCase.otherInfo : [],
+        assumptions: useCase.assumptions?.length ? useCase.assumptions : [],
+      },
+    });
+
+    const newSlug = generateSlug(
+      createdUseCase.name,
+      createdUseCase.id,
+      createdUseCase.publicId
+    );
+
+    return await prisma.useCase.update({
+      where: {
+        id: createdUseCase.id,
+      },
+      data: {
+        slug: newSlug,
+      },
+      include: {
+        conditions: true,
+        flows: {
+          include: {
+            steps: {
+              include: {
+                refs: true,
+              },
+            },
+          },
+        },
+        secondaryActors: true,
+        businessRules: true,
+      },
+    });
   });
-  return updatedCategory;
 }
 
 /**
- * Deletes a category.
- * @param slug - The slug of the category to delete.
+ * Updates a useCase by ID.
+ * @param useCase - The new useCase data.
+ * @returns - The updated useCase, if it exists. Otherwise, returns null.
  */
-export async function deleteCategory(slug: string) {
-  await prisma.categories.delete({
-    where: {
-      slug: slug,
-    },
+export async function updateUseCase(useCase: UseCase): Promise<UseCase | null> {
+  return await prisma.$transaction(async tx => {
+    let verifiedData;
+    try {
+      verifiedData = await verifyNestedRelations(tx, useCase);
+    } catch (error) {
+      throw new Error('Error verifying nested relations:' + error);
+    }
+
+    const existingUseCase = await tx.useCase.findUnique({
+      where: { id: useCase.id },
+    });
+
+    if (!existingUseCase) {
+      return null;
+    }
+
+    if (existingUseCase.projectId !== useCase.projectId) {
+      throw new Error(
+        `UseCase with id ${useCase.id} does not belong to the specified project`
+      );
+    }
+
+    if (existingUseCase.creatorId !== useCase.creatorId) {
+      throw new Error(
+        `UseCase with id ${useCase.id} does not belong to the specified user`
+      );
+    }
+
+    const updatedUseCase = await tx.useCase.update({
+      where: { id: useCase.id },
+      data: {
+        slug: await generateSlug(
+          useCase.name,
+          useCase.id,
+          existingUseCase.publicId
+        ),
+        name: useCase.name,
+        description: useCase.description,
+        trigger: useCase.trigger,
+        priority: useCase.priority,
+        freqUse: useCase.freqUse ? useCase.freqUse : '',
+        otherInfo: useCase.otherInfo?.length ? useCase.otherInfo : [],
+        assumptions: useCase.assumptions?.length ? useCase.assumptions : [],
+        conditions: {
+          deleteMany: { useCaseId: useCase.id },
+          create: verifiedData.conditionsData,
+        },
+        flows: {
+          deleteMany: { useCaseId: useCase.id },
+          create: verifiedData.flowsData,
+        },
+        secondaryActors: {
+          set: [],
+          connect: verifiedData.actorsConnect,
+          create: verifiedData.actorsCreate,
+        },
+        businessRules: {
+          set: [],
+          connect: verifiedData.businessRulesConnect,
+          create: verifiedData.businessRulesCreate,
+        },
+      },
+      include: {
+        conditions: true,
+        flows: { include: { steps: { include: { refs: true } } } },
+        secondaryActors: true,
+        businessRules: true,
+      },
+    });
+
+    return updatedUseCase;
+  });
+}
+
+/**
+ * Deletes a useCase by ID.
+ * @param id - The ID of the useCase to delete.
+ */
+export async function deleteUseCase(id: number) {
+  await prisma.useCase.delete({
+    where: { id: id },
   });
 }

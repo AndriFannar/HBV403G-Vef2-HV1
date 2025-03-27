@@ -7,7 +7,7 @@
  * @dependencies
  */
 
-import type { Project, BaseProject } from '../entities/project.js';
+import type { Project, NewProject } from '../entities/project.js';
 import { PrismaClient } from '@prisma/client';
 
 const maxSlugLength = 64;

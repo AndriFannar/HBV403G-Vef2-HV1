@@ -8,7 +8,7 @@
  */
 
 import { Mutability, RuleType } from '@prisma/client';
-import { BaseUseCaseSchema } from './useCase.js';
+import { NewUseCaseSchema } from './useCase.js';
 import { Referencible } from './referencible.js';
 import { z } from 'zod';
 
@@ -16,6 +16,7 @@ import { z } from 'zod';
  * A schema for validating a new business rule.
  */
 export const NewBusinessRuleSchema = z.object({
+  id: z.number().optional().nullable(),
   ruleDef: z.string().min(1, 'Rule definition is required'),
   type: z.nativeEnum(RuleType),
   mutability: z.nativeEnum(Mutability),
@@ -23,6 +24,9 @@ export const NewBusinessRuleSchema = z.object({
   projectId: z.number().positive('Project ID must be a positive number'),
 });
 
+/**
+ * A schema for validating a base business rule.
+ */
 export const BaseBusinessRuleSchema = NewBusinessRuleSchema.extend({
   id: z.number().positive('ID must be a positive number'),
 }).merge(Referencible);
@@ -31,7 +35,7 @@ export const BaseBusinessRuleSchema = NewBusinessRuleSchema.extend({
  * A schema for validating created business rule.
  */
 export const BusinessRuleSchema = BaseBusinessRuleSchema.extend({
-  useCases: z.array(BaseUseCaseSchema).optional().default([]),
+  useCases: z.array(NewUseCaseSchema).optional().default([]),
 });
 
 export type NewBusinessRule = z.infer<typeof NewBusinessRuleSchema>;

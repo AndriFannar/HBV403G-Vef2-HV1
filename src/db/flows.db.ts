@@ -4,80 +4,16 @@
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
  * @date March 26, 2025
- * @dependencies @prisma/client, flow.js
+ * @dependencies @prisma/client, flow.js, publicIdGenerators.js
  */
 
-import { Prisma, EntityType, FlowType, PrismaClient } from '@prisma/client';
 import type { Flow, NewFlow, BaseFlow } from '../entities/flow.js';
+import { generateFlowPublicId } from './publicIdGenerators.js';
+import { FlowType, PrismaClient } from '@prisma/client';
 
 const defaultNumFlows = 10;
 
 export const prisma = new PrismaClient();
-
-/**
- * Generates a public ID for a new flow.
- * @param tx - The Prisma transaction client.
- * @param flow - The new flow to generate a public ID for.
- * @returns - The generated public ID for the flow.
- */
-async function generateFlowPublicId(
-  tx: Prisma.TransactionClient,
-  flow: NewFlow
-): Promise<string> {
-  if (flow.flowType !== FlowType.NORMAL) {
-    const sequenceType =
-      flow.flowType === FlowType.ALTERNATE
-        ? EntityType.ALTERNATEFLOW
-        : EntityType.EXCEPTIONFLOW;
-
-    const useCaseSequence = await tx.useCaseSequence.findUnique({
-      where: {
-        // eslint-disable-next-line camelcase
-        useCaseId_entityType: {
-          useCaseId: flow.useCaseId,
-          entityType: sequenceType,
-        },
-      },
-      include: {
-        useCase: { select: { publicId: true } },
-      },
-    });
-
-    if (!useCaseSequence) {
-      throw new Error('UseCaseSequence not found');
-    }
-
-    const newCount = useCaseSequence.count + 1;
-    await tx.useCaseSequence.update({
-      where: { id: useCaseSequence.id },
-      data: { count: newCount },
-    });
-
-    if (flow.flowType === FlowType.ALTERNATE) {
-      return `${useCaseSequence.useCase.publicId}.${newCount}`;
-    } else {
-      if (!flow.forFlowId) {
-        throw new Error('forFlowId is required for exception flows');
-      }
-
-      const parentFlow = await tx.flow.findUnique({
-        where: { id: flow.forFlowId },
-        select: { publicId: true },
-      });
-      if (!parentFlow) {
-        throw new Error('Flow not found');
-      }
-      return `${parentFlow.publicId}.E${newCount}`;
-    }
-  } else {
-    const useCase = await tx.useCase.findUnique({
-      where: { id: flow.useCaseId },
-      select: { publicId: true },
-    });
-    if (!useCase) throw new Error('UseCase not found');
-    return `${useCase.publicId}.0`;
-  }
-}
 
 /**
  * Gets all flows.

@@ -4,19 +4,20 @@
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
  * @date March 22, 2025
- * @dependencies zod, slug.js, useCase.js, actor.js, businessRule.js
+ * @dependencies zod, slug.js, useCase.js, actor.js, businessRule.js, projectSequence.js
  */
 
+import { ProjectSequenceSchema } from './projectSequence.js';
 import { NewBusinessRuleSchema } from './businessRule.js';
-import { BaseUseCaseSchema } from './useCase.js';
+import { NewUseCaseSchema } from './useCase.js';
 import { NewActorSchema } from './actor.js';
 import { SlugSchema } from './slug.js';
 import { z } from 'zod';
 
 /**
- * A schema for validating a base project.
+ * A schema for validating a new project.
  */
-export const BaseProjectSchema = z.object({
+export const NewProjectSchema = z.object({
   name: z.string().nonempty(),
   description: z.string().optional().nullable(),
   ownerId: z.number(),
@@ -25,14 +26,14 @@ export const BaseProjectSchema = z.object({
 /**
  * A schema for validating created project.
  */
-export const ProjectSchema = BaseProjectSchema.extend({
+export const ProjectSchema = NewProjectSchema.extend({
   id: z.number(),
   slug: SlugSchema,
-  useCases: z.array(BaseUseCaseSchema).optional(),
+  useCases: z.array(NewUseCaseSchema).optional(),
   actors: z.array(NewActorSchema).optional(),
   businessRules: z.array(NewBusinessRuleSchema).optional(),
-  businessRuleCount: z.number().default(0),
+  projectSequences: z.array(ProjectSequenceSchema),
 });
 
-export type BaseProject = z.infer<typeof BaseProjectSchema>;
+export type NewProject = z.infer<typeof NewProjectSchema>;
 export type Project = z.infer<typeof ProjectSchema>;

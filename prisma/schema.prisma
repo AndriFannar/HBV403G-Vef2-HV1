@@ -47,7 +47,12 @@ enum ConditionType {
   POSTCONDITION
 }
 
-enum EntityType {
+enum ProjectCounterType {
+  BUSINESSRULE
+  USECASE
+}
+
+enum UseCaseCounterType {
   ALTERNATEFLOW
   EXCEPTIONFLOW
   PRECONDITION
@@ -63,17 +68,27 @@ model User {
   useCases UseCase[]
 }
 
+model ProjectSequence {
+  id         Int                @id @default(autoincrement())
+  projectId  Int
+  project    Project            @relation(fields: [projectId], references: [id])
+  entityType ProjectCounterType
+  count      Int
+
+  @@unique([projectId, entityType])
+}
+
 model Project {
-  id                Int            @id @default(autoincrement())
-  slug              String
-  name              String
-  description       String?
-  ownerId           Int
-  owner             User           @relation(fields: [ownerId], references: [id])
-  useCases          UseCase[]
-  actors            Actor[]
-  businessRules     BusinessRule[]
-  businessRuleCount Int            @default(0)
+  id               Int               @id @default(autoincrement())
+  slug             String
+  name             String
+  description      String?
+  ownerId          Int
+  owner            User              @relation(fields: [ownerId], references: [id])
+  useCases         UseCase[]
+  actors           Actor[]
+  businessRules    BusinessRule[]
+  projectSequences ProjectSequence[]
 }
 
 model Actor {
@@ -87,10 +102,10 @@ model Actor {
 }
 
 model UseCaseSequence {
-  id         Int        @id @default(autoincrement())
+  id         Int                @id @default(autoincrement())
   useCaseId  Int
-  useCase    UseCase    @relation(fields: [useCaseId], references: [id])
-  entityType EntityType
+  useCase    UseCase            @relation(fields: [useCaseId], references: [id])
+  entityType UseCaseCounterType
   count      Int
 
   @@unique([useCaseId, entityType])

@@ -4,10 +4,11 @@
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
  * @date March 26, 2025
- * @dependencies @prisma/client, businessRules.js
+ * @dependencies @prisma/client, businessRules.js, publicIdGenerators.js
  */
 
-import { Prisma, PrismaClient } from '@prisma/client';
+import { generateBusinessRulePublicId } from './publicIdGenerators.js';
+import { PrismaClient } from '@prisma/client';
 import type {
   NewBusinessRule,
   BaseBusinessRule,
@@ -16,35 +17,6 @@ import type {
 const defaultNumBusinessRules = 10;
 
 export const prisma = new PrismaClient();
-
-/**
- * Generates a public ID for a new businessRule.
- * @param tx - The Prisma transaction client.
- * @param businessRule - The new businessRule to generate a public ID for.
- * @returns - The generated public ID for the businessRule.
- */
-async function generateBusinessRulePublicId(
-  tx: Prisma.TransactionClient,
-  businessRule: NewBusinessRule
-): Promise<string> {
-  const project = await tx.project.findUnique({
-    where: {
-      id: businessRule.projectId,
-    },
-  });
-
-  if (!project) {
-    throw new Error('Project not found');
-  }
-
-  const newCount = project.businessRuleCount + 1;
-  await tx.project.update({
-    where: { id: businessRule.projectId },
-    data: { businessRuleCount: newCount },
-  });
-
-  return `BR-${newCount}`;
-}
 
 /**
  * Gets all businessRules.

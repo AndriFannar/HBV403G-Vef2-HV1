@@ -7,13 +7,13 @@
  * @dependencies zod, sanitizeString, @prisma/client, project.js
  */
 
-import { BaseProjectSchema } from '../../entities/project.js';
+import { NewProjectSchema } from '../../entities/project.js';
 import { Validator } from '../../entities/validator.js';
 import { sanitizeString } from './sanitizeString.js';
 import { z } from 'zod';
 
 type ValidateProject = z.infer<
-  ReturnType<typeof Validator<typeof BaseProjectSchema>>
+  ReturnType<typeof Validator<typeof NewProjectSchema>>
 >;
 
 /**
@@ -24,7 +24,7 @@ type ValidateProject = z.infer<
 export const validateAndSanitizeBaseProject = async (
   data: unknown
 ): Promise<ValidateProject> => {
-  const parsed = await BaseProjectSchema.safeParseAsync(data);
+  const parsed = await NewProjectSchema.safeParseAsync(data);
   if (!parsed.success) {
     return { error: parsed.error.format() };
   }

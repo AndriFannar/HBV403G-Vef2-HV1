@@ -7,8 +7,8 @@
  * @dependencies zod, @prisma/client, ./useCase.js, ./project.js
  */
 
-import { BaseUseCaseSchema } from './useCase.js';
-import { BaseProjectSchema } from './project.js';
+import { NewUseCaseSchema } from './useCase.js';
+import { NewProjectSchema } from './project.js';
 import { Role } from '@prisma/client';
 import { z } from 'zod';
 
@@ -18,9 +18,9 @@ const minPasswordLength = 6;
 const maxPasswordLength = 64;
 
 /**
- * A schema for validating a base (new) user.
+ * A schema for validating a new user.
  */
-export const BaseUserSchema = z.object({
+export const NewUserSchema = z.object({
   username: z
     .string()
     .min(
@@ -46,12 +46,12 @@ export const BaseUserSchema = z.object({
 /**
  * A schema for validating a user.
  */
-export const UserSchema = BaseUserSchema.extend({
+export const UserSchema = NewUserSchema.extend({
   id: z.number().positive('User ID must be positive'),
   role: z.nativeEnum(Role),
-  projects: z.array(BaseProjectSchema).optional().default([]),
-  useCases: z.array(BaseUseCaseSchema).optional().default([]),
+  projects: z.array(NewProjectSchema).optional().default([]),
+  useCases: z.array(NewUseCaseSchema).optional().default([]),
 });
 
-export type BaseUser = z.infer<typeof BaseUserSchema>;
+export type NewUser = z.infer<typeof NewUserSchema>;
 export type User = z.infer<typeof UserSchema>;
