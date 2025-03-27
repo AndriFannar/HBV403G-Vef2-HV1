@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
-import { questionsApp } from '../../routes/questions.js';
+import { questionsApp } from '../../routes/questions.routes.js';
 import { StatusCodes } from 'http-status-codes';
 
 import * as questionsDb from '../../db/questions.db.js';

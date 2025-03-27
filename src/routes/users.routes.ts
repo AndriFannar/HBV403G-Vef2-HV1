@@ -1,6 +1,6 @@
 /**
- * @file users.ts
- * @description Contains the routes for the users endpoint of the API.
+ * @file users.routes.ts
+ * @description Contains the routes for the user endpoint of the API.
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
  * @date March 04, 2025
@@ -25,7 +25,7 @@ if (!environment) {
 
 const saltRounds = 10;
 
-export const usersApp = new Hono()
+export const userApp = new Hono()
   /**
    * @description Get a user by username
    */

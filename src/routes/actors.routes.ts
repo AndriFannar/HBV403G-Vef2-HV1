@@ -1,23 +1,23 @@
 /**
- * @file actorRoutes.ts
- * @description Contains the routes for the actoe endpoint of the API.
+ * @file actors.routes.ts
+ * @description Contains the routes for the actor endpoint of the API.
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
  * @date March 27, 2025
  * @dependencies
  */
 
-import { validateAndSanitizeNewActor } from '../lib/validation/actorValidator.js';
 import { validateAndSanitizeSlug } from '../lib/validation/slugValidator.js';
-import { getActorsByProjectId, getAllActors } from '../db/actor.db.js';
-import { adminMiddleware } from '../middleware/adminMiddleware.js';
 import { getEnvironment } from '../lib/config/environment.js';
+import { getActorById, getActorsByProjectId } from '../db/actor.db.js';
+import { getProjectById } from '../db/projects.db.js';
 import { StatusCodes } from 'http-status-codes';
 import { logger } from '../lib/io/logger.js';
+import { Role } from '@prisma/client';
 import { jwt } from 'hono/jwt';
 import { Hono } from 'hono';
-import { Role } from '@prisma/client';
-import { getProjectById } from '../db/projects.db.js';
+import { verifyProject } from '../middleware/projectMiddleware.js';
+import type { Variables } from '../entities/context.js';
 
 const environment = getEnvironment(process.env, logger);
 
@@ -25,19 +25,56 @@ if (!environment) {
   process.exit(1);
 }
 
-export const actorApp = new Hono()
+export const actorApp = new Hono<{ Variables: Variables }>()
 
   /**
-   * @description Get all actors
+   * @description Get actors by project ID
+   */
+  .get('/', jwt({ secret: environment.jwtSecret }), async c => {
+    try {
+      const project = c.get('project');
+      const limitStr = c.req.query('limit');
+      const offsetStr = c.req.query('offset');
+
+      const limit = limitStr ? parseInt(limitStr, 10) : undefined;
+      const offset = offsetStr ? parseInt(offsetStr, 10) : undefined;
+
+      const actors = await getActorsByProjectId(project.id, limit, offset);
+
+      if (!actors) {
+        return c.json({ message: 'No actors found' }, StatusCodes.NOT_FOUND);
+      }
+
+      return c.json({
+        data: actors,
+        pagination: { limit: limit || 'default', offset: offset || 'default' },
+      });
+    } catch (e) {
+      logger.error('Failed to get actors:', e);
+      throw e;
+    }
+  })
+
+  /**
+   * @description Get actor by ID
    */
   .get(
-    '/',
+    '/:id',
     jwt({ secret: environment.jwtSecret }),
-    adminMiddleware,
+    verifyProject,
     async c => {
       try {
-        const actors = await getAllActors();
-        return c.json(actors);
+        const project = c.get('project');
+
+        const actor = await getActorById(project.id);
+
+        if (!actor) {
+          return c.json({ message: 'No actor found' }, StatusCodes.NOT_FOUND);
+        }
+
+        return c.json({
+          data: actor,
+        });
       } catch (e) {
         logger.error('Failed to get actors:', e);
         throw e;
@@ -46,41 +83,7 @@ export const actorApp = new Hono()
   )
 
   /**
-   * @description Get actors by project ID
-   */
-  .get('/:id', jwt({ secret: environment.jwtSecret }), async c => {
-    try {
-      const id = parseInt(c.req.param('id'), 10);
-
-      if (isNaN(id)) {
-        return c.json({ message: 'Invalid ID' }, StatusCodes.BAD_REQUEST);
-      }
-
-      const payload = await c.get('jwtPayload');
-
-      const project = await getProjectById(id);
-      if (!project) {
-        return c.json({ message: 'Project not found' }, StatusCodes.NOT_FOUND);
-      }
-      if (project.ownerId !== payload.id && payload.role !== Role.ADMIN) {
-        return c.json({ message: 'Unauthorized' }, StatusCodes.FORBIDDEN);
-      }
-
-      const actors = await getActorsByProjectId(id);
-
-      if (!actors) {
-        return c.json({ message: 'No actors found' }, StatusCodes.NOT_FOUND);
-      }
-
-      return c.json(actors);
-    } catch (e) {
-      logger.error('Failed to get actors:', e);
-      throw e;
-    }
-  })
-
-  /**
-   * @description Create a new category
+   * @description Create a new actor
    */
   .post('/', async c => {
     try {

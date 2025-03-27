@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
-import { categoriesApp } from '../../routes/categories.js';
+import { categoriesApp } from '../../routes/categories.routes.js';
 import { StatusCodes } from 'http-status-codes';
 
 import * as categoriesDb from '../../db/categories.db.js';
