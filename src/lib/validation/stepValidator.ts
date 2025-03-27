@@ -7,14 +7,12 @@
  * @dependencies zod, sanitizeString, @prisma/client, step.js
  */
 
-import { NewStepSchema } from '../../entities/step.js';
 import { Validator } from '../../entities/validator.js';
+import { NewStepSchema } from '../../entities/step.js';
 import { sanitizeString } from './sanitizeString.js';
 import { z } from 'zod';
 
-type ValidateStep = z.infer<
-  ReturnType<typeof Validator<typeof NewStepSchema>>
->;
+type ValidateStep = z.infer<ReturnType<typeof Validator<typeof NewStepSchema>>>;
 
 /**
  * Validates and sanitizes a base (new) step.

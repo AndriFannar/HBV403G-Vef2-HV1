@@ -7,14 +7,12 @@
  * @dependencies validator.ts, slug.ts, zod, xss
  */
 
-import { NewUserSchema } from '../../entities/user.js';
 import { Validator } from '../../entities/validator.js';
+import { NewUserSchema } from '../../entities/user.js';
 import { z } from 'zod';
 import xss from 'xss';
 
-type ValidateUser = z.infer<
-  ReturnType<typeof Validator<typeof NewUserSchema>>
->;
+type ValidateUser = z.infer<ReturnType<typeof Validator<typeof NewUserSchema>>>;
 
 /**
  * Validates and sanitizes a base (new) user.

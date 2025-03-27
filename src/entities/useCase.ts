@@ -50,6 +50,9 @@ export const UseCaseSchema = NewUseCaseSchema.extend({
   useCaseSequences: z.array(UseCaseSequenceSchema).optional(),
 }).merge(Referencible);
 
+/**
+ * A schema for validating a base use case.
+ */
 export const BaseUseCaseSchema = UseCaseSchema.omit({
   conditions: true,
   flows: true,

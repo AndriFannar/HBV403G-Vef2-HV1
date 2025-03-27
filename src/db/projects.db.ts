@@ -4,34 +4,19 @@
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
  * @date March 26, 2025
- * @dependencies
+ * @dependencies @prisma/client, projects.js
  */
 
-import type { Project, NewProject } from '../entities/project.js';
+import type { NewProject, BaseProject, Project } from '../entities/project.js';
+import { generateSlug } from '../lib/slugUtils.js';
 import { PrismaClient } from '@prisma/client';
+import { randomInt } from 'crypto';
 
-const maxSlugLength = 64;
-const defaultNumProjects = 10;
+const MAX_RANDINT = 281474976710655;
+const DEF_NUM_FULL_PROJECTS = 3;
+const DEF_NUM_PROJECTS = 10;
 
 export const prisma = new PrismaClient();
-
-/**
- * Generates a slug for a project.
- * @param projectName - The projectName string to generate a slug for.
- * @param id - The id of the project.
- * @returns - The generated slug.
- */
-function generateSlug(projectName: string, id: number): string {
-  return (
-    id.toString() +
-    '-' +
-    projectName
-      .toLowerCase()
-      .replaceAll(' ', '-')
-      .replaceAll(/[^a-z0-9-]/g, '')
-      .slice(0, maxSlugLength - id.toString().length - 1)
-  );
-}
 
 /**
  * Gets all projects.
@@ -41,177 +26,205 @@ function generateSlug(projectName: string, id: number): string {
  *            If there are no projects, returns an empty array.
  */
 export async function getAllProjects(
-  limit: number = defaultNumProjects,
+  limit: number = DEF_NUM_PROJECTS,
+  offset: number = 0
+): Promise<Array<BaseProject>> {
+  const projects = await prisma.project.findMany({
+    skip: offset,
+    take: limit,
+  });
+  return projects ?? [];
+}
+
+/**
+ * Gets base projects by a user ID.
+ * @param userId - The ID of the user to get the projects for.
+ * @param limit - The maximum number of projects to return at a time.
+ * @param offset - The number of projects to skip.
+ * @returns - The projects for the user ID, if they exist. Otherwise, returns an empty array.
+ */
+export async function getUseCasesSummaryByUserId(
+  userId: number,
+  limit: number = DEF_NUM_PROJECTS,
+  offset: number = 0
+): Promise<Array<BaseProject>> {
+  const projects = await prisma.project.findMany({
+    skip: offset,
+    take: limit,
+    where: {
+      ownerId: userId,
+    },
+  });
+  return projects ?? [];
+}
+
+/**
+ * Gets projects by a user ID.
+ * @param userId - The ID of the user to get the projects for.
+ * @returns - The projects for the user ID, if they exist. Otherwise, returns an empty array.
+ */
+export async function getProjectsByUserId(
+  userId: number,
+  limit: number = DEF_NUM_FULL_PROJECTS,
   offset: number = 0
 ): Promise<Array<Project>> {
   const projects = await prisma.project.findMany({
     skip: offset,
     take: limit,
+    where: {
+      ownerId: userId,
+    },
     include: {
-      useCases: true,
+      useCases: {
+        include: {
+          conditions: true,
+          flows: {
+            include: {
+              steps: {
+                include: {
+                  refs: true,
+                },
+              },
+            },
+          },
+          businessRules: true,
+          secondaryActors: true,
+          useCaseSequences: true,
+        },
+      },
       actors: true,
       businessRules: true,
+      projectSequences: true,
     },
   });
-  return projects ?? null;
+  return projects ?? [];
 }
 
 /**
- * Gets questions by category.
- * @param slug - The slug of the category to get questions from.
- * @param limit - The maximum number of questions to return.
- * @param offset - The number of questions to skip.
- * @returns - All questions in the category with given slug between the limit and offset, if provided. Otherwise, gets 10 questions.
- *            If the category does not exist, returns null.
+ * Gets a project by slug.
+ * @param id - The slug of the project to fetch.
+ * @returns - The project corresponding to given slug, if it exists. Otherwise, returns null.
  */
-export async function getQuestionsByCategory(
-  slug: string,
-  limit: number = defaultNumQuestions,
-  offset: number = 0
-): Promise<Array<Question> | null> {
-  const category = await prisma.categories.findFirst({
-    where: {
-      slug: slug,
-    },
-  });
-
-  if (!category) {
-    return null;
-  }
-
-  const categoryWithQuestions = await prisma.questions.findMany({
-    skip: offset,
-    take: limit,
-    where: {
-      categoryId: category.id,
-    },
-    include: {
-      answers: true,
-    },
-  });
-
-  return categoryWithQuestions ?? null;
-}
-
-/**
- * Gets a question by its slug.
- * @param slug - The slug of the question to get.
- * @returns - The question with the given slug, if any. Otherwise, null.
- */
-export async function getQuestionBySlug(
-  slug: string
-): Promise<Question | null> {
-  const question = await prisma.questions.findFirst({
+export async function getProjectBySlug(slug: string): Promise<Project | null> {
+  const project = await prisma.project.findFirst({
     where: {
       slug: slug,
     },
     include: {
-      answers: true,
-    },
-  });
-
-  return question ?? null;
-}
-
-/**
- * Creates a new question.
- * @param question - The question to create.
- * @returns - The created question.
- */
-export async function createQuestion(
-  question: BaseQuestion
-): Promise<Question> {
-  const newQuestion = await prisma.questions.create({
-    data: {
-      categoryId: question.categoryId,
-      question: question.question,
-      slug: randomInt(maxRandint).toString(),
-      answers: {
-        create: question.answers,
+      useCases: {
+        include: {
+          conditions: true,
+          flows: {
+            include: {
+              steps: {
+                include: {
+                  refs: true,
+                },
+              },
+            },
+          },
+          businessRules: true,
+          secondaryActors: true,
+          useCaseSequences: true,
+        },
       },
-    },
-    include: {
-      answers: true,
-    },
-  });
-
-  const newSlug = generateSlug(newQuestion.question, newQuestion.id);
-
-  return await prisma.questions.update({
-    where: {
-      id: newQuestion.id,
-    },
-    data: {
-      slug: newSlug,
-    },
-    include: {
-      answers: true,
+      actors: true,
+      businessRules: true,
+      projectSequences: true,
     },
   });
+  return project ?? null;
 }
 
 /**
- * Updates a question.
- * @param slug - The slug of the question to update.
- * @param question - The updated question.
- * @returns - The updated question, if it exists. Otherwise, null.
+ * Gets a project by ID.
+ * @param id - The ID of the project to fetch.
+ * @returns - The project corresponding to given ID, if it exists. Otherwise, returns null.
  */
-export async function updateQuestion(
-  slug: string,
-  question: Question
-): Promise<Question | null> {
-  const existingQuestion = await prisma.questions.findFirst({
+export async function getProjectById(id: number): Promise<Project | null> {
+  const project = await prisma.project.findFirst({
     where: {
-      slug: slug,
+      id: id,
     },
     include: {
-      answers: true,
+      useCases: {
+        include: {
+          conditions: true,
+          flows: {
+            include: {
+              steps: {
+                include: {
+                  refs: true,
+                },
+              },
+            },
+          },
+          businessRules: true,
+          secondaryActors: true,
+          useCaseSequences: true,
+        },
+      },
+      actors: true,
+      businessRules: true,
+      projectSequences: true,
     },
   });
-
-  if (!existingQuestion) {
-    return null;
-  }
-
-  const newSlug = generateSlug(question.question, question.id);
-
-  const answersUpdate =
-    question.answers && question.answers.length > 0
-      ? {
-          deleteMany: {},
-          create: question.answers.map(answer => ({
-            answer: answer.answer,
-            isCorrect: answer.isCorrect,
-          })),
-        }
-      : undefined;
-
-  const updatedQuestion = await prisma.questions.update({
-    where: {
-      id: existingQuestion.id,
-    },
-    data: {
-      categoryId: question.categoryId,
-      question: question.question,
-      slug: newSlug,
-      ...(answersUpdate ? { answers: answersUpdate } : {}),
-    },
-    include: {
-      answers: true,
-    },
-  });
-
-  return updatedQuestion;
+  return project ?? null;
 }
 
 /**
- * Deletes a question.
- * @param slug - The slug of the question to delete.
+ * Creates a new project.
+ * @param project - The new project to create.
+ * @returns - The created project.
  */
-export async function deleteQuestion(slug: string) {
-  await prisma.questions.delete({
-    where: {
-      slug: slug,
+export async function createFlow(project: NewProject): Promise<BaseProject> {
+  let createdProject = await prisma.project.create({
+    data: {
+      name: project.name,
+      description: project.description,
+      ownerId: project.ownerId,
+      slug: randomInt(MAX_RANDINT).toString(),
     },
+  });
+
+  const newSlug = generateSlug(createdProject.name, createdProject.id);
+
+  createdProject = await prisma.project.update({
+    where: { id: createdProject.id },
+    data: {
+      slug: newSlug,
+    },
+  });
+
+  return createdProject;
+}
+
+/**
+ * Updates a project by ID.
+ * @param project - The new project data.
+ * @returns - The updated project, if it exists. Otherwise, returns null.
+ */
+export async function updateProject(
+  project: BaseProject
+): Promise<BaseProject | null> {
+  const updatedProject = await prisma.project.update({
+    where: { id: project.id },
+    data: {
+      name: project.name,
+      description: project.description,
+      slug: generateSlug(project.name, project.id),
+    },
+  });
+
+  return updatedProject;
+}
+
+/**
+ * Deletes a project by ID.
+ * @param id - The ID of the project to delete.
+ */
+export async function deleteProject(id: number) {
+  await prisma.project.delete({
+    where: { id: id },
   });
 }

@@ -1,8 +1,8 @@
 /**
  * @file user.ts
- * @description Contains the schema for a base (new) user and an existing user.
+ * @description Contains the schema for a ne) user, a base user, and an existing user.
  * @author Andri Fannar Kristjánsson
- * @version 1.0.0
+ * @version 1.1.0
  * @date March 04, 2025
  * @dependencies zod, @prisma/client, ./useCase.js, ./project.js
  */
@@ -44,14 +44,21 @@ export const NewUserSchema = z.object({
 });
 
 /**
- * A schema for validating a user.
+ * A schema for validating a base user.
  */
-export const UserSchema = NewUserSchema.extend({
+export const BaseUserSchema = NewUserSchema.extend({
   id: z.number().positive('User ID must be positive'),
   role: z.nativeEnum(Role),
+});
+
+/**
+ * A schema for validating a user.
+ */
+export const UserSchema = BaseUserSchema.extend({
   projects: z.array(NewProjectSchema).optional().default([]),
   useCases: z.array(NewUseCaseSchema).optional().default([]),
 });
 
 export type NewUser = z.infer<typeof NewUserSchema>;
+export type BaseUser = z.infer<typeof BaseUserSchema>;
 export type User = z.infer<typeof UserSchema>;

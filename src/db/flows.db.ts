@@ -11,7 +11,7 @@ import type { Flow, NewFlow, BaseFlow } from '../entities/flow.js';
 import { generateFlowPublicId } from './publicIdGenerators.js';
 import { FlowType, PrismaClient } from '@prisma/client';
 
-const defaultNumFlows = 10;
+const DEF_NUM_FLOWS = 10;
 
 export const prisma = new PrismaClient();
 
@@ -23,7 +23,7 @@ export const prisma = new PrismaClient();
  *            If there are no flows, returns an empty array.
  */
 export async function getAllFlows(
-  limit: number = defaultNumFlows,
+  limit: number = DEF_NUM_FLOWS,
   offset: number = 0
 ): Promise<Array<BaseFlow>> {
   const flows = await prisma.flow.findMany({
@@ -39,9 +39,13 @@ export async function getAllFlows(
  * @returns - The flows for the useCase ID, if they exist. Otherwise, returns an empty array.
  */
 export async function getFlowsSummaryByUseCaseId(
-  useCaseId: number
+  useCaseId: number,
+  limit: number = DEF_NUM_FLOWS,
+  offset: number = 0
 ): Promise<Array<BaseFlow>> {
   const flows = await prisma.flow.findMany({
+    skip: offset,
+    take: limit,
     where: {
       useCaseId: useCaseId,
     },
@@ -55,9 +59,13 @@ export async function getFlowsSummaryByUseCaseId(
  * @returns - The flows for the useCase ID, if it exists. Otherwise, returns an empty array.
  */
 export async function getFlowsByUseCaseId(
-  useCaseId: number
+  useCaseId: number,
+  limit: number = DEF_NUM_FLOWS,
+  offset: number = 0
 ): Promise<Array<Flow>> {
   const flows = await prisma.flow.findMany({
+    skip: offset,
+    take: limit,
     where: {
       useCaseId: useCaseId,
     },

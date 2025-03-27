@@ -9,7 +9,7 @@
 
 import { validateAndSanitizeBaseUser } from '../lib/validation/userValidator.js';
 import { adminMiddleware } from '../middleware/adminMiddleware.js';
-import { createUser, getUsers, getUser } from '../db/users.db.js';
+import { createUser, getUsers, getUserByUsername } from '../db/users.db.js';
 import { getEnvironment } from '../lib/config/environment.js';
 import { StatusCodes } from 'http-status-codes';
 import { logger } from '../lib/io/logger.js';
@@ -47,7 +47,7 @@ export const usersApp = new Hono()
         );
       }
 
-      const user = await getUser(validLoginData.data.username);
+      const user = await getUserByUsername(validLoginData.data.username);
 
       if (
         !user ||
@@ -94,7 +94,7 @@ export const usersApp = new Hono()
         );
       }
 
-      if (await getUser(validUser.data.username)) {
+      if (await getUserByUsername(validUser.data.username)) {
         return c.json({ message: 'User already exists' }, StatusCodes.CONFLICT);
       }
 

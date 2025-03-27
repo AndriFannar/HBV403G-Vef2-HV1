@@ -10,7 +10,7 @@
 import type { BaseActor, NewActor } from '../entities/actor.js';
 import { PrismaClient } from '@prisma/client';
 
-const defaultNumActors = 10;
+const DEF_NUM_ACTORS = 10;
 
 export const prisma = new PrismaClient();
 
@@ -22,7 +22,7 @@ export const prisma = new PrismaClient();
  *            If there are no actors, returns an empty array.
  */
 export async function getAllActors(
-  limit: number = defaultNumActors,
+  limit: number = DEF_NUM_ACTORS,
   offset: number = 0
 ): Promise<Array<BaseActor>> {
   const actors = await prisma.actor.findMany({
@@ -38,9 +38,13 @@ export async function getAllActors(
  * @returns - The actors for the project ID, if they exist. Otherwise, returns an empty array.
  */
 export async function getActorsByProjectId(
-  projectId: number
+  projectId: number,
+  limit: number = DEF_NUM_ACTORS,
+  offset: number = 0
 ): Promise<Array<BaseActor>> {
   const actors = await prisma.actor.findMany({
+    take: limit,
+    skip: offset,
     where: {
       projectId: projectId,
     },
@@ -54,9 +58,13 @@ export async function getActorsByProjectId(
  * @returns - The actors for the useCase ID, if they exist. Otherwise, returns an empty array.
  */
 export async function getActorsByUseCaseId(
-  useCaseId: number
+  useCaseId: number,
+  limit: number = DEF_NUM_ACTORS,
+  offset: number = 0
 ): Promise<Array<BaseActor>> {
   const actors = await prisma.actor.findMany({
+    take: limit,
+    skip: offset,
     where: {
       OR: [
         {

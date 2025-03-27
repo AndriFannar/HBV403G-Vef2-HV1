@@ -4,77 +4,25 @@
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
  * @date March 26, 2025
- * @dependencies @prisma/client, useCase.js, publicIdGenerators.js, crypto
+ * @dependencies @prisma/client, useCase.js, publicIdGenerators.js, crypto, slugUtils.js
  */
 
 import type { UseCase, NewUseCase, BaseUseCase } from '../entities/useCase.js';
-import { Prisma, PrismaClient, ProjectCounterType } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
+import { generateSlug } from '../lib/slugUtils.js';
 import { randomInt } from 'crypto';
 import {
-  generateBusinessRulePublicId,
-  generateConditionPublicId,
   generateFlowPublicId,
+  generateUseCasePublicId,
+  generateConditionPublicId,
+  generateBusinessRulePublicId,
 } from './publicIdGenerators.js';
 
-const maxRandint = 281474976710655;
-const defaultNumUseCases = 10;
-const maxSlugLength = 50;
+const MAX_RANDINT = 281474976710655;
+const DEF_NUM_FULL_USECASES = 5;
+const DEF_NUM_USECASES = 10;
 
 export const prisma = new PrismaClient();
-
-/**
- * Generates a public ID for a new UseCase.
- * @param tx - The Prisma transaction client.
- * @param useCase - The new UseCase to generate a public ID for.
- * @returns - The generated public ID for the UseCase.
- */
-async function generateUseCasePublicId(
-  tx: Prisma.TransactionClient,
-  useCase: NewUseCase
-): Promise<string> {
-  const projectSequence = await tx.projectSequence.findUnique({
-    where: {
-      // eslint-disable-next-line camelcase
-      projectId_entityType: {
-        projectId: useCase.projectId,
-        entityType: ProjectCounterType.USECASE,
-      },
-    },
-  });
-
-  if (!projectSequence) {
-    throw new Error('ProjectSequence not found');
-  }
-
-  const newCount = projectSequence.count + 1;
-  await tx.useCaseSequence.update({
-    where: { id: projectSequence.id },
-    data: { count: newCount },
-  });
-
-  return `UC-${newCount}`;
-}
-
-/**
- * Generates a slug for a UseCase.
- * @param name - The name of the UseCase.
- * @param id - The ID of the UseCase.
- * @param publicId - The public ID of the UseCase.
- * @returns - The generated slug.
- */
-function generateSlug(name: string, id: number, publicId: string): string {
-  return (
-    id.toString() +
-    '-' +
-    publicId +
-    ':' +
-    name
-      .toLowerCase()
-      .replaceAll(' ', '-')
-      .replaceAll(/[^a-z0-9-]/g, '')
-      .slice(0, maxSlugLength - id.toString().length - 1)
-  );
-}
 
 /**
  * Gets all flows.
@@ -84,7 +32,7 @@ function generateSlug(name: string, id: number, publicId: string): string {
  *            If there are no flows, returns an empty array.
  */
 export async function getAllUseCases(
-  limit: number = defaultNumUseCases,
+  limit: number = DEF_NUM_USECASES,
   offset: number = 0
 ): Promise<Array<BaseUseCase>> {
   const useCases = await prisma.useCase.findMany({
@@ -133,7 +81,7 @@ export async function getUseCasesSummaryByProjectId(
  */
 export async function getFullUseCasesByProjectId(
   projectId: number,
-  limit: number = defaultNumUseCases,
+  limit: number = DEF_NUM_FULL_USECASES,
   offset: number = 0
 ): Promise<UseCase[]> {
   const useCases = await prisma.useCase.findMany({
@@ -157,6 +105,33 @@ export async function getFullUseCasesByProjectId(
     },
   });
   return useCases ?? [];
+}
+
+/**
+ * Gets a useCase by slug.
+ * @param id - The slug of the useCase to fetch.
+ * @returns - The useCase corresponding to given slug, if it exists. Otherwise, returns null.
+ */
+export async function getUseCaseBySlug(slug: string): Promise<UseCase | null> {
+  const useCase = await prisma.useCase.findFirst({
+    where: { slug: slug },
+    include: {
+      conditions: true,
+      flows: {
+        include: {
+          steps: {
+            include: {
+              refs: true,
+            },
+          },
+        },
+      },
+      businessRules: true,
+      secondaryActors: true,
+      useCaseSequences: true,
+    },
+  });
+  return useCase ?? null;
 }
 
 /**
@@ -366,7 +341,7 @@ export async function createUseCase(useCase: NewUseCase): Promise<UseCase> {
       data: {
         projectId: useCase.projectId,
         publicId: publicId,
-        slug: randomInt(maxRandint).toString(),
+        slug: randomInt(MAX_RANDINT).toString(),
         name: useCase.name,
         creatorId: useCase.creatorId,
         primaryActorId: useCase.primaryActorId,

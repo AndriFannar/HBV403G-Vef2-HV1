@@ -11,7 +11,7 @@ import type { Condition, NewCondition } from '../entities/condition.js';
 import { generateConditionPublicId } from './publicIdGenerators.js';
 import { PrismaClient, ConditionType } from '@prisma/client';
 
-const defaultNumConditions = 10;
+const DEF_NUM_CONDITIONS = 10;
 
 export const prisma = new PrismaClient();
 
@@ -25,7 +25,7 @@ export const prisma = new PrismaClient();
  */
 export async function getAllConditions(
   conditionType?: ConditionType,
-  limit: number = defaultNumConditions,
+  limit: number = DEF_NUM_CONDITIONS,
   offset: number = 0
 ): Promise<Array<Condition>> {
   const conditions = await prisma.condition.findMany({
@@ -46,9 +46,13 @@ export async function getAllConditions(
  */
 export async function getConditionsByUseCaseId(
   useCaseId: number,
-  conditionType?: ConditionType
+  conditionType?: ConditionType,
+  limit: number = DEF_NUM_CONDITIONS,
+  offset: number = 0
 ): Promise<Array<Condition>> {
   const conditions = await prisma.condition.findMany({
+    take: limit,
+    skip: offset,
     where: {
       useCaseId: useCaseId,
       conditionType: conditionType,

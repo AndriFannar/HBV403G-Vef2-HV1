@@ -12,6 +12,9 @@ import { NewStepSchema } from './step.js';
 import { FlowType } from '@prisma/client';
 import { z } from 'zod';
 
+/**
+ * A schema for validating a base flow.
+ */
 export const BaseFlowSchema = z.object({
   name: z.string().min(1, 'Flow name is required'),
   flowType: z.nativeEnum(FlowType),

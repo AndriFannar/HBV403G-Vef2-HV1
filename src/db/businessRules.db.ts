@@ -14,7 +14,7 @@ import type {
   BaseBusinessRule,
 } from '../entities/businessRule.js';
 
-const defaultNumBusinessRules = 10;
+const DEF_NUM_BUSINESSRULES = 10;
 
 export const prisma = new PrismaClient();
 
@@ -26,7 +26,7 @@ export const prisma = new PrismaClient();
  *            If there are no businessRules, returns an empty array.
  */
 export async function getAllBusinessRules(
-  limit: number = defaultNumBusinessRules,
+  limit: number = DEF_NUM_BUSINESSRULES,
   offset: number = 0
 ): Promise<Array<BaseBusinessRule>> {
   const businessRules = await prisma.businessRule.findMany({
@@ -42,9 +42,13 @@ export async function getAllBusinessRules(
  * @returns - The businessRules for the project ID, if they exist. Otherwise, returns an empty array.
  */
 export async function getBusinessRulesByProjectId(
-  projectId: number
+  projectId: number,
+  limit: number = DEF_NUM_BUSINESSRULES,
+  offset: number = 0
 ): Promise<Array<BaseBusinessRule>> {
   const businessRules = await prisma.businessRule.findMany({
+    take: limit,
+    skip: offset,
     where: {
       projectId: projectId,
     },
@@ -58,9 +62,13 @@ export async function getBusinessRulesByProjectId(
  * @returns - The businessRules for the useCase ID, if they exist. Otherwise, returns an empty array.
  */
 export async function getBusinessRulesByUseCaseId(
-  useCaseId: number
+  useCaseId: number,
+  limit: number = DEF_NUM_BUSINESSRULES,
+  offset: number = 0
 ): Promise<Array<BaseBusinessRule>> {
   const businessRules = await prisma.businessRule.findMany({
+    take: limit,
+    skip: offset,
     where: {
       useCases: {
         some: {

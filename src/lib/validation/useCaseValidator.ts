@@ -43,11 +43,11 @@ export const validateAndSanitizeBaseUseCase = async (
     freqUse: parsed.data.freqUse ? sanitizeString(parsed.data.freqUse) : '',
     businessRules: parsed.data.businessRules,
     otherInfo: parsed.data.otherInfo
-      ? sanitizeString(parsed.data.otherInfo)
-      : '',
+      ? parsed.data.otherInfo.map(info => sanitizeString(info))
+      : [],
     assumptions: parsed.data.assumptions
-      ? sanitizeString(parsed.data.assumptions)
-      : '',
+      ? parsed.data.assumptions.map(info => sanitizeString(info))
+      : [],
   };
 
   return { data: sanitizedData };

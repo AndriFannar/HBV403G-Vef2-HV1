@@ -8,8 +8,8 @@
  */
 
 import { Mutability, RuleType } from '@prisma/client';
-import { NewUseCaseSchema } from './useCase.js';
 import { Referencible } from './referencible.js';
+import { NewUseCaseSchema } from './useCase.js';
 import { z } from 'zod';
 
 /**

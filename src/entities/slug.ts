@@ -9,8 +9,8 @@
 
 import { z } from 'zod';
 
-const minSlugLength = 3;
 const maxSlugLength = 550;
+const minSlugLength = 3;
 
 /**
  * A schema for validating slugs.

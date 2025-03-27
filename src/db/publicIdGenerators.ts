@@ -4,18 +4,19 @@
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
  * @date March 26, 2025
- * @dependencies
+ * @dependencies @prisma/client, businessRule.js, condition.js, flow.js, useCase.js
  */
 
 import type { NewBusinessRule } from '../entities/businessRule.js';
 import type { NewCondition } from '../entities/condition.js';
+import type { NewUseCase } from '../entities/useCase.js';
 import type { NewFlow } from '../entities/flow.js';
 import {
-  ConditionType,
   FlowType,
+  type Prisma,
+  ConditionType,
   ProjectCounterType,
   UseCaseCounterType,
-  type Prisma,
 } from '@prisma/client';
 
 /**
@@ -156,4 +157,37 @@ export async function generateBusinessRulePublicId(
   });
 
   return `BR-${newCount}`;
+}
+
+/**
+ * Generates a public ID for a new UseCase.
+ * @param tx - The Prisma transaction client.
+ * @param useCase - The new UseCase to generate a public ID for.
+ * @returns - The generated public ID for the UseCase.
+ */
+export async function generateUseCasePublicId(
+  tx: Prisma.TransactionClient,
+  useCase: NewUseCase
+): Promise<string> {
+  const projectSequence = await tx.projectSequence.findUnique({
+    where: {
+      // eslint-disable-next-line camelcase
+      projectId_entityType: {
+        projectId: useCase.projectId,
+        entityType: ProjectCounterType.USECASE,
+      },
+    },
+  });
+
+  if (!projectSequence) {
+    throw new Error('ProjectSequence not found');
+  }
+
+  const newCount = projectSequence.count + 1;
+  await tx.useCaseSequence.update({
+    where: { id: projectSequence.id },
+    data: { count: newCount },
+  });
+
+  return `UC-${newCount}`;
 }

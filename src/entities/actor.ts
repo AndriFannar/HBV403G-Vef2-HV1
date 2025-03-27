@@ -20,6 +20,9 @@ export const NewActorSchema = z.object({
   projectId: z.number().positive('Project ID must be a positive number'),
 });
 
+/**
+ * A schema for validating a base actor.
+ */
 export const BaseActorSchema = NewActorSchema.extend({
   id: z.number().positive('ID must be a positive number'),
 });

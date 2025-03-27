@@ -11,6 +11,9 @@ import { ReferenceSchema } from './reference.js';
 import { Referencible } from './referencible.js';
 import { z } from 'zod';
 
+/**
+ * A schema for validating a base step.
+ */
 export const BaseStepSchema = z.object({
   step: z.string().nonempty(),
   flowId: z.number().positive('Flow ID must be positive'),
