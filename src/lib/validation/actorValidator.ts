@@ -17,11 +17,11 @@ type ValidateActor = z.infer<
 >;
 
 /**
- * Validates and sanitizes a base (new) actor.
- * @param data - The base actor data to validate and sanitize.
+ * Validates and sanitizes a new actor.
+ * @param data - The new actor data to validate and sanitize.
  * @returns - The validated and sanitized actor or an error.
  */
-export const validateAndSanitizeBaseActor = async (
+export const validateAndSanitizeNewActor = async (
   data: unknown
 ): Promise<ValidateActor> => {
   const parsed = await NewActorSchema.safeParseAsync(data);
