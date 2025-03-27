@@ -7,13 +7,13 @@
  * @dependencies validator.ts, zod, sanitizeString.js, actor.js
  */
 
-import { BaseActorSchema } from '../../entities/actor.js';
+import { NewActorSchema } from '../../entities/actor.js';
 import { Validator } from '../../entities/validator.js';
 import { sanitizeString } from './sanitizeString.js';
 import { z } from 'zod';
 
 type ValidateActor = z.infer<
-  ReturnType<typeof Validator<typeof BaseActorSchema>>
+  ReturnType<typeof Validator<typeof NewActorSchema>>
 >;
 
 /**
@@ -24,7 +24,7 @@ type ValidateActor = z.infer<
 export const validateAndSanitizeBaseActor = async (
   data: unknown
 ): Promise<ValidateActor> => {
-  const parsed = await BaseActorSchema.safeParseAsync(data);
+  const parsed = await NewActorSchema.safeParseAsync(data);
   if (!parsed.success) {
     return { error: parsed.error.format() };
   }

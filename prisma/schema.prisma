@@ -110,7 +110,7 @@ model UseCase {
   primaryActorId   Int
   primaryActor     Actor             @relation("PrimaryActor", fields: [primaryActorId], references: [id])
   secondaryActors  Actor[]           @relation("UseCaseSecondaryActors")
-  description      String?
+  description      String
   trigger          String
   conditions       Condition[]
   flows            Flow[]

@@ -13,9 +13,9 @@ import { Referencible } from './referencible.js';
 import { z } from 'zod';
 
 /**
- * A schema for validating a base business rule.
+ * A schema for validating a new business rule.
  */
-export const BaseBusinessRuleSchema = z.object({
+export const NewBusinessRuleSchema = z.object({
   ruleDef: z.string().min(1, 'Rule definition is required'),
   type: z.nativeEnum(RuleType),
   mutability: z.nativeEnum(Mutability),
@@ -23,13 +23,17 @@ export const BaseBusinessRuleSchema = z.object({
   projectId: z.number().positive('Project ID must be a positive number'),
 });
 
+export const BaseBusinessRuleSchema = NewBusinessRuleSchema.extend({
+  id: z.number().positive('ID must be a positive number'),
+}).merge(Referencible);
+
 /**
  * A schema for validating created business rule.
  */
 export const BusinessRuleSchema = BaseBusinessRuleSchema.extend({
-  id: z.number().positive('ID must be a positive number'),
   useCases: z.array(BaseUseCaseSchema).optional().default([]),
-}).merge(Referencible);
+});
 
+export type NewBusinessRule = z.infer<typeof NewBusinessRuleSchema>;
 export type BaseBusinessRule = z.infer<typeof BaseBusinessRuleSchema>;
 export type BusinessRule = z.infer<typeof BusinessRuleSchema>;

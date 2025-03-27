@@ -85,7 +85,7 @@ export async function getAllConditions(
 }
 
 /**
- * Gets a conditions by a useCase ID.
+ * Gets conditions by a useCase ID.
  * @param useCaseId - The ID of the useCase to get the conditions for.
  * @param conditionType - The type of condition to get. If not specified, gets all conditions.
  * @returns - The conditions for the useCase ID, if they exists. Otherwise, returns an empty array.
@@ -104,7 +104,7 @@ export async function getConditionsByUseCaseId(
 }
 
 /**
- * Gets a condition by a ID.
+ * Gets a condition by ID.
  * @param id - The ID of the condition to fetch.
  * @returns - The condition corresponding to given ID, if it exists. Otherwise, returns null.
  */
@@ -149,16 +149,14 @@ export async function createCondition(
 export async function updateCondition(
   condition: Condition
 ): Promise<Condition | null> {
-  return await prisma.$transaction(async tx => {
-    const updatedCondition = await tx.condition.update({
-      where: { id: condition.id },
-      data: {
-        description: condition.description,
-      },
-    });
-
-    return updatedCondition;
+  const updatedCondition = await prisma.condition.update({
+    where: { id: condition.id },
+    data: {
+      description: condition.description,
+    },
   });
+
+  return updatedCondition;
 }
 
 /**

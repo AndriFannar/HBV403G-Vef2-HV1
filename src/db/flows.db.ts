@@ -114,8 +114,8 @@ export async function getFlowsSummaryByUseCaseId(
 }
 
 /**
- * Gets a flow by a useCase ID.
- * @param useCaseId - The ID of the useCase to get the flow for.
+ * Gets flows by a useCase ID.
+ * @param useCaseId - The ID of the useCase to get the flows for.
  * @returns - The flows for the useCase ID, if it exists. Otherwise, returns an empty array.
  */
 export async function getFlowsByUseCaseId(
@@ -137,7 +137,7 @@ export async function getFlowsByUseCaseId(
 }
 
 /**
- * Gets a flow by a ID.
+ * Gets a flow by ID.
  * @param id - The ID of the flow to fetch.
  * @returns - The flow corresponding to given ID, if it exists. Otherwise, returns null.
  */
@@ -219,38 +219,36 @@ export async function createFlow(flow: NewFlow): Promise<Flow> {
  * @returns - The updated flow, if it exists. Otherwise, returns null.
  */
 export async function updateFlow(flow: Flow): Promise<Flow | null> {
-  return await prisma.$transaction(async tx => {
-    const updatedFlow = await tx.flow.update({
-      where: { id: flow.id },
-      data: {
-        name: flow.name,
-        stepCount: flow.steps.length,
-        steps: {
-          deleteMany: {},
-          create: flow.steps.map((s, i) => ({
-            step: s.step,
-            publicId: `${i + 1}.`,
-            refs: {
-              create: s.refs.map(r => ({
-                refType: r.refType,
-                refId: r.refId,
-                location: r.location,
-              })),
-            },
-          })),
-        },
-      },
-      include: {
-        steps: {
-          include: {
-            refs: true,
+  const updatedFlow = await prisma.flow.update({
+    where: { id: flow.id },
+    data: {
+      name: flow.name,
+      stepCount: flow.steps.length,
+      steps: {
+        deleteMany: {},
+        create: flow.steps.map((s, i) => ({
+          step: s.step,
+          publicId: `${i + 1}.`,
+          refs: {
+            create: s.refs.map(r => ({
+              refType: r.refType,
+              refId: r.refId,
+              location: r.location,
+            })),
           },
+        })),
+      },
+    },
+    include: {
+      steps: {
+        include: {
+          refs: true,
         },
       },
-    });
-
-    return updatedFlow;
+    },
   });
+
+  return updatedFlow;
 }
 
 /**

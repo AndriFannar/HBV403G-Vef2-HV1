@@ -11,22 +11,26 @@ import { UseCaseSchema } from './useCase.js';
 import { z } from 'zod';
 
 /**
- * A schema for validating a base actor.
+ * A schema for validating a new actor.
  */
-export const BaseActorSchema = z.object({
+export const NewActorSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  description: z.string().optional(),
+  description: z.string().optional().nullable(),
   projectId: z.number().positive('Project ID must be a positive number'),
+});
+
+export const BaseActorSchema = NewActorSchema.extend({
+  id: z.number().positive('ID must be a positive number'),
 });
 
 /**
  * A schema for validating created actor.
  */
 export const ActorSchema = BaseActorSchema.extend({
-  id: z.number().positive('ID must be a positive number'),
   useCasesPrimary: z.array(UseCaseSchema).optional().default([]),
   useCasesSecondary: z.array(UseCaseSchema).optional().default([]),
 });
 
+export type NewActor = z.infer<typeof NewActorSchema>;
 export type BaseActor = z.infer<typeof BaseActorSchema>;
 export type Actor = z.infer<typeof ActorSchema>;

@@ -7,9 +7,9 @@
  * @dependencies zod, slug.js, useCase.js, actor.js, businessRule.js
  */
 
-import { BaseBusinessRuleSchema } from './businessRule.js';
+import { NewBusinessRuleSchema } from './businessRule.js';
 import { BaseUseCaseSchema } from './useCase.js';
-import { BaseActorSchema } from './actor.js';
+import { NewActorSchema } from './actor.js';
 import { SlugSchema } from './slug.js';
 import { z } from 'zod';
 
@@ -29,8 +29,8 @@ export const ProjectSchema = BaseProjectSchema.extend({
   id: z.number(),
   slug: SlugSchema,
   useCases: z.array(BaseUseCaseSchema).optional(),
-  actors: z.array(BaseActorSchema).optional(),
-  businessRules: z.array(BaseBusinessRuleSchema).optional(),
+  actors: z.array(NewActorSchema).optional(),
+  businessRules: z.array(NewBusinessRuleSchema).optional(),
   businessRuleCount: z.number().default(0),
 });
 

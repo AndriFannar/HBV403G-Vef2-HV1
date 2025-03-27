@@ -7,10 +7,10 @@
  * @dependencies zod, slug.js, @prisma/client, businessRule.js, condition.js, actor.js, flow.js, referencible.js
  */
 
-import { BaseBusinessRuleSchema } from './businessRule.js';
+import { NewBusinessRuleSchema } from './businessRule.js';
 import { NewConditionSchema } from './condition.js';
 import { Referencible } from './referencible.js';
-import { BaseActorSchema } from './actor.js';
+import { NewActorSchema } from './actor.js';
 import { NewFlowSchema } from './flow.js';
 import { Priority } from '@prisma/client';
 import { SlugSchema } from './slug.js';
@@ -25,16 +25,16 @@ export const BaseUseCaseSchema = z.object({
   name: z.string().min(1, 'Use case name is required'),
   creatorId: z.number().positive('Creator ID must be positive'),
   primaryActorId: z.number().positive('Primary actor ID must be positive'),
-  secondaryActors: z.array(BaseActorSchema).optional().default([]),
+  secondaryActors: z.array(NewActorSchema).optional().default([]),
   description: z.string().min(1, 'Description is required'),
   trigger: z.string().min(1, 'Trigger is required'),
   conditions: z
     .array(NewConditionSchema)
-    .length(1, 'At least one postcondition is required'),
+    .min(1, 'At least one postcondition is required'),
   flows: z.array(NewFlowSchema).min(1, 'At least one Normal Flow is required'),
   priority: z.nativeEnum(Priority),
   freqUse: z.string().optional().nullable(),
-  businessRules: z.array(BaseBusinessRuleSchema).optional().default([]),
+  businessRules: z.array(NewBusinessRuleSchema).optional().default([]),
   otherInfo: z.string().optional().nullable(),
   assumptions: z.string().optional().nullable(),
 });

@@ -7,13 +7,13 @@
  * @dependencies zod, sanitizeString, businessRule.js, validator.js
  */
 
-import { BaseBusinessRuleSchema } from '../../entities/businessRule.js';
+import { NewBusinessRuleSchema } from '../../entities/businessRule.js';
 import { Validator } from '../../entities/validator.js';
 import { sanitizeString } from './sanitizeString.js';
 import { z } from 'zod';
 
 type ValidateBusinessRule = z.infer<
-  ReturnType<typeof Validator<typeof BaseBusinessRuleSchema>>
+  ReturnType<typeof Validator<typeof NewBusinessRuleSchema>>
 >;
 
 /**
@@ -24,7 +24,7 @@ type ValidateBusinessRule = z.infer<
 export const validateAndSanitizeBaseBusinessRule = async (
   data: unknown
 ): Promise<ValidateBusinessRule> => {
-  const parsed = await BaseBusinessRuleSchema.safeParseAsync(data);
+  const parsed = await NewBusinessRuleSchema.safeParseAsync(data);
   if (!parsed.success) {
     return { error: parsed.error.format() };
   }
