@@ -8,11 +8,10 @@
  */
 
 import { getEnvironment } from './lib/config/environment.js';
-import { categoriesApp } from './routes/categories.js';
-import { questionsApp } from './routes/questions.js';
-import { usersApp } from './routes/users.js';
+import { usersApp } from './routes/userRoutes.js';
 import { logger } from './lib/io/logger.js';
 import { serve } from '@hono/node-server';
+import { showRoutes } from 'hono/dev';
 import { Hono } from 'hono';
 
 const env = getEnvironment(process.env, logger);
@@ -22,8 +21,12 @@ if (!env) {
 }
 
 const app = new Hono()
-  .route('/categories', categoriesApp)
-  .route('/questions', questionsApp)
+  .route('/actors', actorApp)
+  .route('/businessRules', businessRuleApp)
+  .route('/conditions', conditionApp)
+  .route('/flows', flowApp)
+  .route('/projects', projectApp)
+  .route('/useCases', useCaseApp)
   .route('/users', usersApp);
 
 app.get('/', c => {
@@ -39,3 +42,7 @@ serve(
     logger.info(`Server is running on port: ${info.port}`);
   }
 );
+
+showRoutes(app, {
+  verbose: true,
+});

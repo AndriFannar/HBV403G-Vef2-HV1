@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Step" ALTER COLUMN "publicId" SET DATA TYPE TEXT;

@@ -7,14 +7,12 @@
  * @dependencies validator.ts, slug.ts, zod, xss
  */
 
-import { BaseUserSchema } from '../../entities/user.js';
 import { Validator } from '../../entities/validator.js';
+import { NewUserSchema } from '../../entities/user.js';
 import { z } from 'zod';
 import xss from 'xss';
 
-type ValidateUser = z.infer<
-  ReturnType<typeof Validator<typeof BaseUserSchema>>
->;
+type ValidateUser = z.infer<ReturnType<typeof Validator<typeof NewUserSchema>>>;
 
 /**
  * Validates and sanitizes a base (new) user.
@@ -24,7 +22,7 @@ type ValidateUser = z.infer<
 export const validateAndSanitizeBaseUser = async (
   data: unknown
 ): Promise<ValidateUser> => {
-  const parsed = await BaseUserSchema.safeParseAsync(data);
+  const parsed = await NewUserSchema.safeParseAsync(data);
   if (!parsed.success) {
     return { error: parsed.error.format() };
   }
