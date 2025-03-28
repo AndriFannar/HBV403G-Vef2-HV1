@@ -25,7 +25,10 @@ export const NewUseCaseSchema = z.object({
   name: z.string().min(1, 'Use case name is required'),
   creatorId: z.number().positive('Creator ID must be positive'),
   primaryActorId: z.number().positive('Primary actor ID must be positive'),
-  secondaryActors: z.array(NewActorSchema).optional().default([]),
+  secondaryActors: z
+    .array(z.lazy(() => NewActorSchema))
+    .optional()
+    .default([]),
   description: z.string().min(1, 'Description is required'),
   trigger: z.string().min(1, 'Trigger is required'),
   conditions: z

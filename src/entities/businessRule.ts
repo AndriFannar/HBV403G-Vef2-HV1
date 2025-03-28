@@ -35,7 +35,10 @@ export const BaseBusinessRuleSchema = NewBusinessRuleSchema.extend({
  * A schema for validating created business rule.
  */
 export const BusinessRuleSchema = BaseBusinessRuleSchema.extend({
-  useCases: z.array(NewUseCaseSchema).optional().default([]),
+  useCases: z
+    .array(z.lazy(() => NewUseCaseSchema))
+    .optional()
+    .default([]),
 });
 
 export type NewBusinessRule = z.infer<typeof NewBusinessRuleSchema>;

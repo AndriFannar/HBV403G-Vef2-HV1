@@ -18,7 +18,6 @@ import { flowApp } from './routes/flows.routes.js';
 import { userApp } from './routes/users.routes.js';
 import { logger } from './lib/io/logger.js';
 import { serve } from '@hono/node-server';
-import { showRoutes } from 'hono/dev';
 import { Hono } from 'hono';
 
 const env = getEnvironment(process.env, logger);
@@ -39,9 +38,15 @@ const app = new Hono()
 
 app.get('/', c => {
   const routes = [
+    { method: 'POST', path: '/users/login' },
+    { method: 'POST', path: '/users/signup' },
+    { method: 'GET', path: '/admin/users' },
     { method: 'GET', path: '/admin/actors' },
     { method: 'GET', path: '/projects/:projectId/actors' },
     { method: 'GET', path: '/projects/:projectId/actors/:id' },
+    { method: 'POST', path: '/projects/:projectId/actors/' },
+    { method: 'PATCH', path: '/projects/:projectId/actors/:id' },
+    { method: 'DELETE', path: '/projects/:projectId/actors/:id' },
   ];
   return c.json(routes);
 });
@@ -55,7 +60,3 @@ serve(
     logger.info(`Server is running on port: ${info.port}`);
   }
 );
-
-showRoutes(app, {
-  verbose: true,
-});

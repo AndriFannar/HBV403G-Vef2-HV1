@@ -8,12 +8,11 @@
  */
 
 import { validateAndSanitizeBaseUser } from '../lib/validation/userValidator.js';
-import { createUser, getAllUsers, getUserByUsername } from '../db/users.db.js';
-import { adminMiddleware } from '../middleware/adminMiddleware.js';
+import { createUser, getUserByUsername } from '../db/users.db.js';
 import { getEnvironment } from '../lib/config/environment.js';
 import { StatusCodes } from 'http-status-codes';
 import { logger } from '../lib/io/logger.js';
-import { sign, jwt } from 'hono/jwt';
+import { sign } from 'hono/jwt';
 import { Hono } from 'hono';
 import bcrypt from 'bcrypt';
 
@@ -109,24 +108,6 @@ export const userApp = new Hono()
       throw e;
     }
   })
-
-  /**
-   * @description Get all users
-   */
-  .get(
-    '/',
-    jwt({ secret: environment.jwtSecret }),
-    adminMiddleware,
-    async c => {
-      try {
-        const users = await getAllUsers();
-        return c.json(users);
-      } catch (e) {
-        logger.error('Failed to get users:', e);
-        throw e;
-      }
-    }
-  )
 
   /**
    * @description Error handling for internal server errors
