@@ -10,11 +10,11 @@
 import { adminMiddleware } from '../middleware/adminMiddleware.js';
 import { getEnvironment } from '../lib/config/environment.js';
 import { getAllActors } from '../db/actor.db.js';
-import { getAllUsers, getUserById } from '../db/users.db.js';
+import { getAllUsers } from '../db/users.db.js';
 import { logger } from '../lib/io/logger.js';
-import { Hono } from 'hono';
-import { StatusCodes } from 'http-status-codes';
 import { jwt } from 'hono/jwt';
+import { Hono } from 'hono';
+import { getAllProjects } from '../db/projects.db.js';
 
 const environment = getEnvironment(process.env, logger);
 
@@ -37,6 +37,24 @@ export const adminApp = new Hono()
         return c.json(users);
       } catch (e) {
         logger.error('Failed to get users:', e);
+        throw e;
+      }
+    }
+  )
+
+  /**
+   * @description Get all projects
+   */
+  .get(
+    '/projects',
+    jwt({ secret: environment.jwtSecret }),
+    adminMiddleware,
+    async c => {
+      try {
+        const projects = await getAllProjects();
+        return c.json(projects);
+      } catch (e) {
+        logger.error('Failed to get actors:', e);
         throw e;
       }
     }

@@ -10,10 +10,10 @@
 import { verifyProject } from '../middleware/projectMiddleware.js';
 import { getEnvironment } from '../lib/config/environment.js';
 import type { Variables } from '../entities/context.js';
+import { Hono, type Context, type Next } from 'hono';
 import { StatusCodes } from 'http-status-codes';
 import { logger } from '../lib/io/logger.js';
 import { jwt } from 'hono/jwt';
-import { Hono } from 'hono';
 import {
   createActor,
   deleteActor,
@@ -32,12 +32,38 @@ if (!environment) {
   process.exit(1);
 }
 
+const fetchAndVerifyActor = async (c: Context, next: Next) => {
+  const actorIdStr = c.req.param('id');
+  const actorId = parseInt(actorIdStr, 10);
+
+  if (isNaN(actorId)) {
+    return c.json({ message: 'Invalid ID' }, StatusCodes.BAD_REQUEST);
+  }
+
+  const project = c.get('project');
+
+  const actor = await getActorById(actorId);
+
+  if (!actor || actor.projectId !== project.id) {
+    return c.json(
+      {
+        message:
+          'No actor with corresponding ID found which belongs to given project',
+      },
+      StatusCodes.NOT_FOUND
+    );
+  }
+
+  c.set('actor', actor);
+  return next();
+};
+
 export const actorApp = new Hono<{ Variables: Variables }>()
 
   /**
    * @description Get actors by project ID
    */
-  .get('/', jwt({ secret: environment.jwtSecret }), async c => {
+  .get('/', jwt({ secret: environment.jwtSecret }), verifyProject, async c => {
     try {
       const project = c.get('project');
       const limitStr = c.req.query('limit');
@@ -71,27 +97,7 @@ export const actorApp = new Hono<{ Variables: Variables }>()
     verifyProject,
     async c => {
       try {
-        const actorIdStr = c.req.param('id');
-        const actorId = parseInt(actorIdStr, 10);
-
-        if (isNaN(actorId)) {
-          return c.json({ message: 'Invalid ID' }, StatusCodes.BAD_REQUEST);
-        }
-
-        const project = c.get('project');
-
-        const actor = await getActorById(actorId);
-
-        if (!actor || actor.projectId !== project.id) {
-          return c.json(
-            {
-              message:
-                'No actor with corresponding ID found which belongs to given project',
-            },
-            StatusCodes.NOT_FOUND
-          );
-        }
-
+        
         return c.json({
           data: actor,
         });
