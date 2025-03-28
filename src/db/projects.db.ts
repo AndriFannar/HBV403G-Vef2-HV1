@@ -43,7 +43,7 @@ export async function getAllProjects(
  * @param offset - The number of projects to skip.
  * @returns - The projects for the user ID, if they exist. Otherwise, returns an empty array.
  */
-export async function getUseCasesSummaryByUserId(
+export async function getProjectSummaryByUserId(
   userId: number,
   limit: number = DEF_NUM_PROJECTS,
   offset: number = 0
@@ -137,6 +137,22 @@ export async function getProjectBySlug(slug: string): Promise<Project | null> {
 }
 
 /**
+ * Gets a project summary (without relations) by ID.
+ * @param id - The ID of the project to fetch.
+ * @returns - The project corresponding to given ID, if it exists. Otherwise, returns null.
+ */
+export async function getProjectSummaryById(
+  id: number
+): Promise<BaseProject | null> {
+  const project = await prisma.project.findFirst({
+    where: {
+      id: id,
+    },
+  });
+  return project ?? null;
+}
+
+/**
  * Gets a project by ID.
  * @param id - The ID of the project to fetch.
  * @returns - The project corresponding to given ID, if it exists. Otherwise, returns null.
@@ -177,7 +193,7 @@ export async function getProjectById(id: number): Promise<Project | null> {
  * @param project - The new project to create.
  * @returns - The created project.
  */
-export async function createFlow(project: NewProject): Promise<BaseProject> {
+export async function createProject(project: NewProject): Promise<BaseProject> {
   let createdProject = await prisma.project.create({
     data: {
       name: project.name,

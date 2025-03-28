@@ -7,17 +7,24 @@
  * @dependencies
  */
 
-import { validateAndSanitizeSlug } from '../lib/validation/slugValidator.js';
+import { verifyProject } from '../middleware/projectMiddleware.js';
 import { getEnvironment } from '../lib/config/environment.js';
-import { getActorById, getActorsByProjectId } from '../db/actor.db.js';
-import { getProjectById } from '../db/projects.db.js';
+import type { Variables } from '../entities/context.js';
 import { StatusCodes } from 'http-status-codes';
 import { logger } from '../lib/io/logger.js';
-import { Role } from '@prisma/client';
 import { jwt } from 'hono/jwt';
 import { Hono } from 'hono';
-import { verifyProject } from '../middleware/projectMiddleware.js';
-import type { Variables } from '../entities/context.js';
+import {
+  createActor,
+  deleteActor,
+  updateActor,
+  getActorById,
+  getActorsByProjectId,
+} from '../db/actor.db.js';
+import {
+  validateAndSanitizeBaseActor,
+  validateAndSanitizeNewActor,
+} from '../lib/validation/actorValidator.js';
 
 const environment = getEnvironment(process.env, logger);
 
@@ -64,12 +71,25 @@ export const actorApp = new Hono<{ Variables: Variables }>()
     verifyProject,
     async c => {
       try {
+        const actorIdStr = c.req.param('id');
+        const actorId = parseInt(actorIdStr, 10);
+
+        if (isNaN(actorId)) {
+          return c.json({ message: 'Invalid ID' }, StatusCodes.BAD_REQUEST);
+        }
+
         const project = c.get('project');
 
-        const actor = await getActorById(project.id);
+        const actor = await getActorById(actorId);
 
-        if (!actor) {
-          return c.json({ message: 'No actor found' }, StatusCodes.NOT_FOUND);
+        if (!actor || actor.projectId !== project.id) {
+          return c.json(
+            {
+              message:
+                'No actor with corresponding ID found which belongs to given project',
+            },
+            StatusCodes.NOT_FOUND
+          );
         }
 
         return c.json({
@@ -85,95 +105,125 @@ export const actorApp = new Hono<{ Variables: Variables }>()
   /**
    * @description Create a new actor
    */
-  .post('/', async c => {
+  .post('/', jwt({ secret: environment.jwtSecret }), verifyProject, async c => {
     try {
-      let newCategory: unknown;
+      let newActor: unknown;
       try {
-        newCategory = await c.req.json();
+        newActor = await c.req.json();
       } catch {
         return c.json({ message: 'Invalid JSON' }, StatusCodes.BAD_REQUEST);
       }
 
-      const validCategory = await validateAndSanitizeBaseCategory(newCategory);
+      const validActor = await validateAndSanitizeNewActor(newActor);
 
-      if (!validCategory.data) {
+      if (!validActor.data) {
         return c.json(
-          { message: 'Invalid data', errors: validCategory.error },
+          { message: 'Invalid data', errors: validActor.error },
           StatusCodes.BAD_REQUEST
         );
       }
 
-      const createdCategory = await createCategory(validCategory.data);
-      return c.json(createdCategory, StatusCodes.CREATED);
+      const createdActor = await createActor(validActor.data);
+      return c.json(createdActor, StatusCodes.CREATED);
     } catch (e) {
-      logger.error('Failed to create category:', e);
+      logger.error('Failed to create actor:', e);
       throw e;
     }
   })
 
   /**
-   * @description Update a category by slug
+   * @description Update an actor by ID
    */
-  .patch('/:slug', async c => {
-    try {
-      let updatedCategoryInfo: unknown;
+  .patch(
+    '/:id',
+    jwt({ secret: environment.jwtSecret }),
+    verifyProject,
+    async c => {
       try {
-        updatedCategoryInfo = await c.req.json();
-      } catch {
-        return c.json({ message: 'Invalid JSON' }, StatusCodes.BAD_REQUEST);
+        let updatedActorInfo: unknown;
+        try {
+          updatedActorInfo = await c.req.json();
+        } catch {
+          return c.json({ message: 'Invalid JSON' }, StatusCodes.BAD_REQUEST);
+        }
+
+        const actorIdStr = c.req.param('id');
+        const actorId = parseInt(actorIdStr, 10);
+
+        if (isNaN(actorId)) {
+          return c.json({ message: 'Invalid ID' }, StatusCodes.BAD_REQUEST);
+        }
+
+        const project = c.get('project');
+        const actor = await getActorById(actorId);
+
+        if (!actor || actor.projectId !== project.id) {
+          return c.json(
+            {
+              message:
+                'No actor with corresponding ID found which belongs to given project',
+            },
+            StatusCodes.NOT_FOUND
+          );
+        }
+
+        const validActor = await validateAndSanitizeBaseActor(updatedActorInfo);
+
+        if (!validActor.data) {
+          return c.json(
+            { message: 'Invalid data', errors: validActor.error },
+            StatusCodes.BAD_REQUEST
+          );
+        }
+
+        validActor.data.id = actorId;
+
+        const updatedActor = await updateActor(validActor.data);
+        return c.json(updatedActor);
+      } catch (e) {
+        logger.error('Failed to update actor:', e);
+        throw e;
       }
-
-      const slug = await validateAndSanitizeSlug(c.req.param('slug'));
-      if (!slug.data) {
-        return c.json({ message: 'Invalid slug' }, StatusCodes.BAD_REQUEST);
-      }
-
-      if ((await getCategory(slug.data)) === null) {
-        return c.json({ message: 'Category not found' }, StatusCodes.NOT_FOUND);
-      }
-
-      const validCategory =
-        await validateAndSanitizeBaseCategory(updatedCategoryInfo);
-
-      if (!validCategory.data) {
-        return c.json(
-          { message: 'Invalid data', errors: validCategory.error },
-          StatusCodes.BAD_REQUEST
-        );
-      }
-
-      const updatedCategory = await updateCategory(
-        c.req.param('slug'),
-        validCategory.data
-      );
-      return c.json(updatedCategory);
-    } catch (e) {
-      logger.error('Failed to update category:', e);
-      throw e;
     }
-  })
+  )
 
   /**
-   * @description Delete a category by slug
+   * @description Delete an actor by ID
    */
-  .delete('/:slug', async c => {
-    try {
-      const slug = await validateAndSanitizeSlug(c.req.param('slug'));
-      if (!slug.data) {
-        return c.json({ message: 'Invalid slug' }, StatusCodes.BAD_REQUEST);
-      }
+  .delete(
+    '/:id',
+    jwt({ secret: environment.jwtSecret }),
+    verifyProject,
+    async c => {
+      try {
+        const actorIdStr = c.req.param('id');
+        const actorId = parseInt(actorIdStr, 10);
 
-      if ((await getCategory(slug.data)) === null) {
-        return c.json({ message: 'Category not found' }, StatusCodes.NOT_FOUND);
-      }
+        if (isNaN(actorId)) {
+          return c.json({ message: 'Invalid ID' }, StatusCodes.BAD_REQUEST);
+        }
 
-      await deleteCategory(slug.data);
-      return c.body(null, StatusCodes.NO_CONTENT);
-    } catch (e) {
-      logger.error('Failed to delete category:', e);
-      throw e;
+        const project = c.get('project');
+        const actor = await getActorById(actorId);
+
+        if (!actor || actor.projectId !== project.id) {
+          return c.json(
+            {
+              message:
+                'No actor with corresponding ID found which belongs to given project',
+            },
+            StatusCodes.NOT_FOUND
+          );
+        }
+
+        await deleteActor(actorId);
+        return c.body(null, StatusCodes.NO_CONTENT);
+      } catch (e) {
+        logger.error('Failed to delete actor:', e);
+        throw e;
+      }
     }
-  })
+  )
 
   /**
    * @description Error handling for internal server errors

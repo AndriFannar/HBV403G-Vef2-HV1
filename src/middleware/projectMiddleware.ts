@@ -7,11 +7,18 @@
  * @dependencies http-status-codes, hono, projects.db.js, @prisma/client
  */
 
-import { getProjectById } from '../db/projects.db.js';
+import { getProjectSummaryById } from '../db/projects.db.js';
 import { StatusCodes } from 'http-status-codes';
 import type { Context, Next } from 'hono';
 import { Role } from '@prisma/client';
 
+/**
+ * Verifies project exists and authenticated user has access to it.
+ * If the project exists and user has access, it sets the summary project in the context.
+ * @param c - The context object
+ * @param next - The next middleware function
+ * @returns - The next middleware function or an error response.
+ */
 export const verifyProject = async (c: Context, next: Next) => {
   const projectIdStr = c.req.param('projectId');
   if (!projectIdStr) {
@@ -29,7 +36,7 @@ export const verifyProject = async (c: Context, next: Next) => {
 
   const payload = await c.get('jwtPayload');
 
-  const project = await getProjectById(projId);
+  const project = await getProjectSummaryById(projId);
   if (!project) {
     return c.json({ message: 'Project not found' }, StatusCodes.NOT_FOUND);
   }
