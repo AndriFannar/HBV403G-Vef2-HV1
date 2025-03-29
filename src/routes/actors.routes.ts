@@ -9,7 +9,7 @@
 
 import { verifyProject } from '../middleware/projectMiddleware.js';
 import { getEnvironment } from '../lib/config/environment.js';
-import { parseId } from '../middleware/utilMiddleware.js';
+import { parseParamId } from '../middleware/utilMiddleware.js';
 import type { Variables } from '../entities/context.js';
 import { Hono, type Context, type Next } from 'hono';
 import { StatusCodes } from 'http-status-codes';
@@ -41,7 +41,7 @@ if (!environment) {
  * @returns - A promise that resolves to the next middleware function.
  */
 const fetchAndVerifyActor = async (c: Context, next: Next) => {
-  const actorId = c.get('id');
+  const actorId = c.get('actorId');
   const project = c.get('project');
 
   const actor = await getActorById(actorId);
@@ -68,7 +68,7 @@ export const actorApp = new Hono<{ Variables: Variables }>()
   .get(
     '/',
     jwt({ secret: environment.jwtSecret }),
-    parseId,
+    parseParamId('projectId'),
     verifyProject,
     async c => {
       try {
@@ -103,9 +103,10 @@ export const actorApp = new Hono<{ Variables: Variables }>()
    * @description Get actor by ID
    */
   .get(
-    '/:id',
+    '/:actorId',
     jwt({ secret: environment.jwtSecret }),
-    parseId,
+    parseParamId('projectId'),
+    parseParamId('id'),
     verifyProject,
     fetchAndVerifyActor,
     async c => {
@@ -126,7 +127,8 @@ export const actorApp = new Hono<{ Variables: Variables }>()
   .post(
     '/',
     jwt({ secret: environment.jwtSecret }),
-    parseId,
+    parseParamId('projectId'),
+    parseParamId('id'),
     verifyProject,
     async c => {
       try {
@@ -159,9 +161,10 @@ export const actorApp = new Hono<{ Variables: Variables }>()
    * @description Update an actor by ID
    */
   .patch(
-    '/:id',
+    '/:actorId',
     jwt({ secret: environment.jwtSecret }),
-    parseId,
+    parseParamId('projectId'),
+    parseParamId('actorId'),
     verifyProject,
     fetchAndVerifyActor,
     async c => {
@@ -197,9 +200,10 @@ export const actorApp = new Hono<{ Variables: Variables }>()
    * @description Delete an actor by ID
    */
   .delete(
-    '/:id',
+    '/:actorId',
     jwt({ secret: environment.jwtSecret }),
-    parseId,
+    parseParamId('projectId'),
+    parseParamId('actorId'),
     verifyProject,
     fetchAndVerifyActor,
     async c => {
