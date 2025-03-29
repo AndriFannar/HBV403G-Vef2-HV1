@@ -8,7 +8,7 @@
  */
 
 import type { UseCase, NewUseCase, BaseUseCase } from '../entities/useCase.js';
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient, UseCaseCounterType } from '@prisma/client';
 import { generateSlug } from '../lib/slugUtils.js';
 import { randomInt } from 'crypto';
 import {
@@ -365,6 +365,14 @@ export async function createUseCase(useCase: NewUseCase): Promise<UseCase> {
         },
         otherInfo: useCase.otherInfo?.length ? useCase.otherInfo : [],
         assumptions: useCase.assumptions?.length ? useCase.assumptions : [],
+        useCaseSequences: {
+          create: [
+            { entityType: UseCaseCounterType.ALTERNATEFLOW, count: 0 },
+            { entityType: UseCaseCounterType.EXCEPTIONFLOW, count: 0 },
+            { entityType: UseCaseCounterType.POSTCONDITION, count: 0 },
+            { entityType: UseCaseCounterType.PRECONDITION, count: 0 },
+          ],
+        },
       },
     });
 

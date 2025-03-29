@@ -151,7 +151,7 @@ export async function generateBusinessRulePublicId(
   }
 
   const newCount = projectSequence.count + 1;
-  await tx.useCaseSequence.update({
+  await tx.projectSequence.update({
     where: { id: projectSequence.id },
     data: { count: newCount },
   });

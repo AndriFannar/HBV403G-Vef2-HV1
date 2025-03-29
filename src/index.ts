@@ -47,8 +47,10 @@ app.get('/', c => {
     { method: 'POST', path: '/users/login' },
     { method: 'POST', path: '/users/signup' },
     { method: 'GET', path: '/admin/users' },
+    { method: 'GET', path: '/admin/projects' },
     { method: 'GET', path: '/admin/actors' },
-    { method: 'GET', path: '/users/:userId/projects/summary/' },
+    { method: 'GET', path: '/admin/businessRules' },
+    { method: 'GET', path: '/users/:userId/projects/summary' },
     { method: 'GET', path: '/users/:userId/projects/:projectId' },
     { method: 'POST', path: '/users/:userId/projects/' },
     { method: 'PATCH', path: '/users/:userId/projects/:projectId' },
@@ -58,7 +60,7 @@ app.get('/', c => {
       method: 'GET',
       path: '/users/:userId/projects/:projectId/actors/:actorId',
     },
-    { method: 'POST', path: '/users/:userId/projects/:projectId/actors/' },
+    { method: 'POST', path: '/users/:userId/projects/:projectId/actors' },
     {
       method: 'PATCH',
       path: '/users/:userId/projects/:projectId/actors/:actorId',
@@ -66,6 +68,23 @@ app.get('/', c => {
     {
       method: 'DELETE',
       path: '/users/:userId/projects/:projectId/actors/:actorId',
+    },
+    { method: 'GET', path: '/users/:userId/projects/:projectId/businessRules' },
+    {
+      method: 'GET',
+      path: '/users/:userId/projects/:projectId/businessRules/:businessRuleId',
+    },
+    {
+      method: 'POST',
+      path: '/users/:userId/projects/:projectId/businessRules',
+    },
+    {
+      method: 'PATCH',
+      path: '/users/:userId/projects/:projectId/businessRules/:businessRuleId',
+    },
+    {
+      method: 'DELETE',
+      path: '/users/:userId/projects/:projectId/businessRules/:businessRuleId',
     },
   ];
   return c.json(routes);

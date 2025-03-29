@@ -7,23 +7,30 @@
  * @dependencies zod, sanitizeString, businessRule.js, validator.js
  */
 
-import { NewBusinessRuleSchema } from '../../entities/businessRule.js';
+import {
+  BaseBusinessRuleSchema,
+  NewBusinessRuleSchema,
+} from '../../entities/businessRule.js';
 import { Validator } from '../../entities/validator.js';
 import { sanitizeString } from './sanitizeString.js';
 import { z } from 'zod';
 
-type ValidateBusinessRule = z.infer<
+type ValidateNewBusinessRule = z.infer<
   ReturnType<typeof Validator<typeof NewBusinessRuleSchema>>
 >;
 
+type ValidateBaseBusinessRule = z.infer<
+  ReturnType<typeof Validator<typeof BaseBusinessRuleSchema>>
+>;
+
 /**
- * Validates and sanitizes a base (new) business rule.
+ * Validates and sanitizes a new business rule.
  * @param data - The business rule data to validate and sanitize.
  * @returns An object with either the sanitized data or an error.
  */
-export const validateAndSanitizeBaseBusinessRule = async (
+export const validateAndSanitizeNewBusinessRule = async (
   data: unknown
-): Promise<ValidateBusinessRule> => {
+): Promise<ValidateNewBusinessRule> => {
   const parsed = await NewBusinessRuleSchema.safeParseAsync(data);
   if (!parsed.success) {
     return { error: parsed.error.format() };
@@ -36,4 +43,32 @@ export const validateAndSanitizeBaseBusinessRule = async (
   };
 
   return { data: sanitizedData };
+};
+
+/**
+ * Validates and sanitizes a base business rule.
+ * @param data - The base business rule data to validate and sanitize.
+ * @returns - The validated and sanitized business rule or an error.
+ */
+export const validateAndSanitizeBaseBusinessRule = async (
+  data: unknown
+): Promise<ValidateBaseBusinessRule> => {
+  const parsed = await BaseBusinessRuleSchema.safeParseAsync(data);
+  if (!parsed.success) {
+    return { error: parsed.error.format() };
+  }
+
+  const sanitizedData = await validateAndSanitizeNewBusinessRule(parsed.data);
+
+  if (!sanitizedData.data) {
+    return { error: sanitizedData.error };
+  }
+
+  return {
+    data: {
+      ...sanitizedData.data,
+      id: parsed.data.id,
+      publicId: sanitizeString(parsed.data.publicId),
+    },
+  };
 };

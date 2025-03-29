@@ -7,13 +7,16 @@
  * @dependencies project.ts
  */
 
-import type { Actor } from './actor.js';
+import type { BusinessRule } from '@prisma/client';
 import type { Project } from './project.js';
+import type { Actor } from './actor.js';
 
 export type Variables = {
   projectId: number;
   userId: number;
   actorId: number;
+  businessRuleId: number;
   project: Project;
   actor: Actor;
+  businessRule: BusinessRule;
 };

@@ -8,13 +8,14 @@
  */
 
 import { adminMiddleware } from '../middleware/adminMiddleware.js';
+import { getAllBusinessRules } from '../db/businessRules.db.js';
 import { getEnvironment } from '../lib/config/environment.js';
+import { getAllProjects } from '../db/projects.db.js';
 import { getAllActors } from '../db/actor.db.js';
 import { getAllUsers } from '../db/users.db.js';
 import { logger } from '../lib/io/logger.js';
 import { jwt } from 'hono/jwt';
 import { Hono } from 'hono';
-import { getAllProjects } from '../db/projects.db.js';
 
 const environment = getEnvironment(process.env, logger);
 
@@ -36,7 +37,7 @@ export const adminApp = new Hono()
         const users = await getAllUsers();
         return c.json(users);
       } catch (e) {
-        logger.error('Failed to get users:', e);
+        logger.error('Failed to get Users:', e);
         throw e;
       }
     }
@@ -54,7 +55,7 @@ export const adminApp = new Hono()
         const projects = await getAllProjects();
         return c.json(projects);
       } catch (e) {
-        logger.error('Failed to get actors:', e);
+        logger.error('Failed to get Projects:', e);
         throw e;
       }
     }
@@ -72,7 +73,25 @@ export const adminApp = new Hono()
         const actors = await getAllActors();
         return c.json(actors);
       } catch (e) {
-        logger.error('Failed to get actors:', e);
+        logger.error('Failed to get Actors:', e);
+        throw e;
+      }
+    }
+  )
+
+  /**
+   * @description Get all business rules
+   */
+  .get(
+    '/businessRules',
+    jwt({ secret: environment.jwtSecret }),
+    adminMiddleware,
+    async c => {
+      try {
+        const businessRules = await getAllBusinessRules();
+        return c.json(businessRules);
+      } catch (e) {
+        logger.error('Failed to get Business Rules:', e);
         throw e;
       }
     }

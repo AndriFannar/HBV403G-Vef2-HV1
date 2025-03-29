@@ -59,7 +59,7 @@ export const projectApp = new Hono<{ Variables: Variables }>()
 
         if (!projects) {
           return c.json(
-            { message: 'No projects found' },
+            { message: 'No Projects found' },
             StatusCodes.NOT_FOUND
           );
         }
@@ -72,7 +72,7 @@ export const projectApp = new Hono<{ Variables: Variables }>()
           },
         });
       } catch (e) {
-        logger.error('Failed to get projects:', e);
+        logger.error('Failed to get Projects:', e);
         throw e;
       }
     }
@@ -96,12 +96,12 @@ export const projectApp = new Hono<{ Variables: Variables }>()
 
         if (
           !project ||
-          !(project.ownerId !== payload.sub && payload.sub !== userId)
+          !(project.ownerId === payload.sub && payload.sub === userId)
         ) {
           return c.json(
             {
               message:
-                'No project with corresponding ID found which belongs to authenticated user',
+                'No Project with corresponding ID found which belongs to authenticated user',
             },
             StatusCodes.NOT_FOUND
           );
@@ -111,7 +111,7 @@ export const projectApp = new Hono<{ Variables: Variables }>()
           data: project,
         });
       } catch (e) {
-        logger.error('Failed to get project:', e);
+        logger.error('Failed to get Project:', e);
         throw e;
       }
     }
@@ -152,7 +152,7 @@ export const projectApp = new Hono<{ Variables: Variables }>()
         const createdProject = await createProject(validProject.data);
         return c.json(createdProject, StatusCodes.CREATED);
       } catch (e) {
-        logger.error('Failed to create project:', e);
+        logger.error('Failed to create Project:', e);
         throw e;
       }
     }
@@ -193,14 +193,14 @@ export const projectApp = new Hono<{ Variables: Variables }>()
         const updatedProject = await updateProject(validProject.data);
         return c.json(updatedProject);
       } catch (e) {
-        logger.error('Failed to update project:', e);
+        logger.error('Failed to update Project:', e);
         throw e;
       }
     }
   )
 
   /**
-   * @description Delete an actor by ID
+   * @description Delete a project by ID
    */
   .delete(
     '/:projectId',
@@ -213,7 +213,7 @@ export const projectApp = new Hono<{ Variables: Variables }>()
         await deleteProject(c.get('projectId'));
         return c.body(null, StatusCodes.NO_CONTENT);
       } catch (e) {
-        logger.error('Failed to delete project:', e);
+        logger.error('Failed to delete Project:', e);
         throw e;
       }
     }

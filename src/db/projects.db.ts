@@ -9,7 +9,7 @@
 
 import type { NewProject, BaseProject, Project } from '../entities/project.js';
 import { generateSlug } from '../lib/slugUtils.js';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, ProjectCounterType } from '@prisma/client';
 import { randomInt } from 'crypto';
 
 const MAX_RANDINT = 281474976710655;
@@ -194,29 +194,37 @@ export async function getProjectById(id: number): Promise<Project | null> {
  * @returns - The created project.
  */
 export async function createProject(project: NewProject): Promise<BaseProject> {
-  if (!project.ownerId) {
-    throw new Error('Project must have an owner ID');
-  }
+  return await prisma.$transaction(async tx => {
+    if (!project.ownerId) {
+      throw new Error('Project must have an owner ID');
+    }
 
-  let createdProject = await prisma.project.create({
-    data: {
-      name: project.name,
-      description: project.description,
-      ownerId: project.ownerId,
-      slug: randomInt(MAX_RANDINT).toString(),
-    },
+    let createdProject = await tx.project.create({
+      data: {
+        name: project.name,
+        description: project.description,
+        ownerId: project.ownerId,
+        slug: randomInt(MAX_RANDINT).toString(),
+        projectSequences: {
+          create: [
+            { entityType: ProjectCounterType.USECASE, count: 0 },
+            { entityType: ProjectCounterType.BUSINESSRULE, count: 0 },
+          ],
+        },
+      },
+    });
+
+    const newSlug = generateSlug(createdProject.name, createdProject.id);
+
+    createdProject = await tx.project.update({
+      where: { id: createdProject.id },
+      data: {
+        slug: newSlug,
+      },
+    });
+
+    return createdProject;
   });
-
-  const newSlug = generateSlug(createdProject.name, createdProject.id);
-
-  createdProject = await prisma.project.update({
-    where: { id: createdProject.id },
-    data: {
-      slug: newSlug,
-    },
-  });
-
-  return createdProject;
 }
 
 /**

@@ -35,7 +35,8 @@ if (!environment) {
 
 /**
  * Fetches the actor by ID from the request parameters and verifies if it belongs to the project.
- * @requires ID to be parsed and set in the context under `id`.
+ * @requires project to be fetched and set in the context under `project`.
+ * @requires actorId to be parsed and set in the context under `actorId`.
  * @param c - The Hono context object.
  * @param next - The next middleware function.
  * @returns - A promise that resolves to the next middleware function.
@@ -50,7 +51,7 @@ const fetchAndVerifyActor = async (c: Context, next: Next) => {
     return c.json(
       {
         message:
-          'No actor with corresponding ID found which belongs to given project',
+          'No Actor with corresponding ID found which belongs to given Project',
       },
       StatusCodes.NOT_FOUND
     );
@@ -83,7 +84,7 @@ export const actorApp = new Hono<{ Variables: Variables }>()
         const actors = await getActorsByProjectId(project.id, limit, offset);
 
         if (!actors) {
-          return c.json({ message: 'No actors found' }, StatusCodes.NOT_FOUND);
+          return c.json({ message: 'No Actors found' }, StatusCodes.NOT_FOUND);
         }
 
         return c.json({
@@ -94,7 +95,7 @@ export const actorApp = new Hono<{ Variables: Variables }>()
           },
         });
       } catch (e) {
-        logger.error('Failed to get actors:', e);
+        logger.error('Failed to get Actors:', e);
         throw e;
       }
     }
@@ -117,7 +118,7 @@ export const actorApp = new Hono<{ Variables: Variables }>()
           data: c.get('actor'),
         });
       } catch (e) {
-        logger.error('Failed to get actors:', e);
+        logger.error('Failed to get Actors:', e);
         throw e;
       }
     }
@@ -153,7 +154,7 @@ export const actorApp = new Hono<{ Variables: Variables }>()
         const createdActor = await createActor(validActor.data);
         return c.json(createdActor, StatusCodes.CREATED);
       } catch (e) {
-        logger.error('Failed to create actor:', e);
+        logger.error('Failed to create Actor:', e);
         throw e;
       }
     }
@@ -193,7 +194,7 @@ export const actorApp = new Hono<{ Variables: Variables }>()
         const updatedActor = await updateActor(validActor.data);
         return c.json(updatedActor);
       } catch (e) {
-        logger.error('Failed to update actor:', e);
+        logger.error('Failed to update Actor:', e);
         throw e;
       }
     }
@@ -215,7 +216,7 @@ export const actorApp = new Hono<{ Variables: Variables }>()
         await deleteActor(c.get('actor').id);
         return c.body(null, StatusCodes.NO_CONTENT);
       } catch (e) {
-        logger.error('Failed to delete actor:', e);
+        logger.error('Failed to delete Actor:', e);
         throw e;
       }
     }
