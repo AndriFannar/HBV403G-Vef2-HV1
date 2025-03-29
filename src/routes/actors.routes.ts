@@ -26,7 +26,6 @@ import {
   validateAndSanitizeBaseActor,
   validateAndSanitizeNewActor,
 } from '../lib/validation/actorValidator.js';
-import { parse } from 'path';
 
 const environment = getEnvironment(process.env, logger);
 

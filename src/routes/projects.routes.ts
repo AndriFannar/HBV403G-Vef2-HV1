@@ -7,25 +7,25 @@
  * @dependencies
  */
 
-import { Hono } from 'hono';
+import { verifyProjectOwnership } from '../middleware/projectMiddleware.js';
+import { parseParamId } from '../middleware/utilMiddleware.js';
 import { getEnvironment } from '../lib/config/environment.js';
+import type { Variables } from '../entities/context.js';
+import { StatusCodes } from 'http-status-codes';
 import { logger } from '../lib/io/logger.js';
 import { jwt } from 'hono/jwt';
+import { Hono } from 'hono';
 import {
-  createProject,
   deleteProject,
+  updateProject,
+  createProject,
   getProjectById,
   getProjectSummaryByUserId,
-  updateProject,
 } from '../db/projects.db.js';
-import { StatusCodes } from 'http-status-codes';
-import { parseParamId } from '../middleware/utilMiddleware.js';
-import type { Variables } from '../entities/context.js';
 import {
-  validateAndSanitizeBaseProject,
   validateAndSanitizeNewProject,
+  validateAndSanitizeBaseProject,
 } from '../lib/validation/projectValidator.js';
-import { verifyProjectOwnership } from '../middleware/projectMiddleware.js';
 
 const environment = getEnvironment(process.env, logger);
 
