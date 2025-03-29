@@ -7,9 +7,9 @@
  * @dependencies
  */
 
-import { verifyProject } from '../middleware/projectMiddleware.js';
-import { getEnvironment } from '../lib/config/environment.js';
+import { verifyProjectOwnership } from '../middleware/projectMiddleware.js';
 import { parseParamId } from '../middleware/utilMiddleware.js';
+import { getEnvironment } from '../lib/config/environment.js';
 import type { Variables } from '../entities/context.js';
 import { Hono, type Context, type Next } from 'hono';
 import { StatusCodes } from 'http-status-codes';
@@ -26,6 +26,7 @@ import {
   validateAndSanitizeBaseActor,
   validateAndSanitizeNewActor,
 } from '../lib/validation/actorValidator.js';
+import { parse } from 'path';
 
 const environment = getEnvironment(process.env, logger);
 
@@ -68,8 +69,9 @@ export const actorApp = new Hono<{ Variables: Variables }>()
   .get(
     '/',
     jwt({ secret: environment.jwtSecret }),
+    parseParamId('userId'),
     parseParamId('projectId'),
-    verifyProject,
+    verifyProjectOwnership,
     async c => {
       try {
         const project = c.get('project');
@@ -105,9 +107,10 @@ export const actorApp = new Hono<{ Variables: Variables }>()
   .get(
     '/:actorId',
     jwt({ secret: environment.jwtSecret }),
+    parseParamId('userId'),
     parseParamId('projectId'),
-    parseParamId('id'),
-    verifyProject,
+    parseParamId('actorId'),
+    verifyProjectOwnership,
     fetchAndVerifyActor,
     async c => {
       try {
@@ -127,9 +130,9 @@ export const actorApp = new Hono<{ Variables: Variables }>()
   .post(
     '/',
     jwt({ secret: environment.jwtSecret }),
+    parseParamId('userId'),
     parseParamId('projectId'),
-    parseParamId('id'),
-    verifyProject,
+    verifyProjectOwnership,
     async c => {
       try {
         let newActor: unknown;
@@ -163,9 +166,10 @@ export const actorApp = new Hono<{ Variables: Variables }>()
   .patch(
     '/:actorId',
     jwt({ secret: environment.jwtSecret }),
+    parseParamId('userId'),
     parseParamId('projectId'),
     parseParamId('actorId'),
-    verifyProject,
+    verifyProjectOwnership,
     fetchAndVerifyActor,
     async c => {
       try {
@@ -202,9 +206,10 @@ export const actorApp = new Hono<{ Variables: Variables }>()
   .delete(
     '/:actorId',
     jwt({ secret: environment.jwtSecret }),
+    parseParamId('userId'),
     parseParamId('projectId'),
     parseParamId('actorId'),
-    verifyProject,
+    verifyProjectOwnership,
     fetchAndVerifyActor,
     async c => {
       try {

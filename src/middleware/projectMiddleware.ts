@@ -15,32 +15,30 @@ import { Role } from '@prisma/client';
 /**
  * Verifies project exists and authenticated user has access to it.
  * If the project exists and user has access, it sets the summary project in the context.
+ * @requires jwtPayload to be parsed and set in the context under `jwtPayload`.
+ * @requires userId to be parsed and set in the context under `userId`.
+ * @requires projectId to be parsed and set in the context under `projectId`.
  * @param c - The context object
  * @param next - The next middleware function
  * @returns - The next middleware function or an error response.
  */
-export const verifyProject = async (c: Context, next: Next) => {
-  const projectIdStr = c.req.param('projectId');
-  if (!projectIdStr) {
-    return c.json(
-      { message: 'Project ID not provided' },
-      StatusCodes.BAD_REQUEST
-    );
-  }
+export const verifyProjectOwnership = async (c: Context, next: Next) => {
+  const payload = await c.get('jwtPayload');
+  const userId = await c.get('userId');
+  const projectId = c.get('projectId');
 
-  const projId = parseInt(projectIdStr, 10);
-
-  if (isNaN(projId)) {
+  if (isNaN(projectId)) {
     return c.json({ message: 'Invalid ID' }, StatusCodes.BAD_REQUEST);
   }
 
-  const payload = await c.get('jwtPayload');
-
-  const project = await getProjectSummaryById(projId);
+  const project = await getProjectSummaryById(projectId);
   if (!project) {
     return c.json({ message: 'Project not found' }, StatusCodes.NOT_FOUND);
   }
-  if (project.ownerId !== payload.sub && payload.role !== Role.ADMIN) {
+  if (
+    !(project.ownerId === payload.sub && payload.sub === userId) ||
+    payload.role !== Role.ADMIN
+  ) {
     return c.json({ message: 'Unauthorized' }, StatusCodes.FORBIDDEN);
   }
 

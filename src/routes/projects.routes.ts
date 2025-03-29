@@ -11,10 +11,21 @@ import { Hono } from 'hono';
 import { getEnvironment } from '../lib/config/environment.js';
 import { logger } from '../lib/io/logger.js';
 import { jwt } from 'hono/jwt';
-import { getProjectSummaryByUserId } from '../db/projects.db.js';
+import {
+  createProject,
+  deleteProject,
+  getProjectById,
+  getProjectSummaryByUserId,
+  updateProject,
+} from '../db/projects.db.js';
 import { StatusCodes } from 'http-status-codes';
-import { parseId } from '../middleware/utilMiddleware.js';
+import { parseParamId } from '../middleware/utilMiddleware.js';
 import type { Variables } from '../entities/context.js';
+import {
+  validateAndSanitizeBaseProject,
+  validateAndSanitizeNewProject,
+} from '../lib/validation/projectValidator.js';
+import { verifyProjectOwnership } from '../middleware/projectMiddleware.js';
 
 const environment = getEnvironment(process.env, logger);
 
@@ -27,16 +38,14 @@ export const projectApp = new Hono<{ Variables: Variables }>()
    * @description Get summary of projects by user ID
    */
   .get(
-    'summary/:id',
+    '/summary',
     jwt({ secret: environment.jwtSecret }),
-    parseId,
+    parseParamId('userId'),
     async c => {
       try {
-        const id = c.get('id');
-        console.log('Requested Summary for user ID:', id);
-        console.log('JWT Payload:', c.get('jwtPayload'));
+        const userId = c.get('userId');
 
-        if (c.get('jwtPayload').sub !== id) {
+        if (c.get('jwtPayload').sub !== userId) {
           return c.json({ message: 'Unauthorized' }, StatusCodes.FORBIDDEN);
         }
 
@@ -46,7 +55,7 @@ export const projectApp = new Hono<{ Variables: Variables }>()
         const limit = limitStr ? parseInt(limitStr, 10) : undefined;
         const offset = offsetStr ? parseInt(offsetStr, 10) : undefined;
 
-        const projects = await getProjectSummaryByUserId(id, limit, offset);
+        const projects = await getProjectSummaryByUserId(userId, limit, offset);
 
         if (!projects) {
           return c.json(
@@ -70,152 +79,145 @@ export const projectApp = new Hono<{ Variables: Variables }>()
   )
 
   /**
-   * @description Get actor by ID
+   * @description Get project by ID
    */
-  .get('/:id', jwt({ secret: environment.jwtSecret }), async c => {
-    try {
-      const actorIdStr = c.req.param('id');
-      const actorId = parseInt(actorIdStr, 10);
+  .get(
+    '/:projectId',
+    jwt({ secret: environment.jwtSecret }),
+    parseParamId('userId'),
+    parseParamId('projectId'),
+    async c => {
+      try {
+        const payload = await c.get('jwtPayload');
+        const userId = c.get('userId');
+        const projectId = c.get('projectId');
 
-      if (isNaN(actorId)) {
-        return c.json({ message: 'Invalid ID' }, StatusCodes.BAD_REQUEST);
+        const project = await getProjectById(projectId);
+
+        if (
+          !project ||
+          !(project.ownerId !== payload.sub && payload.sub !== userId)
+        ) {
+          return c.json(
+            {
+              message:
+                'No project with corresponding ID found which belongs to authenticated user',
+            },
+            StatusCodes.NOT_FOUND
+          );
+        }
+
+        return c.json({
+          data: project,
+        });
+      } catch (e) {
+        logger.error('Failed to get project:', e);
+        throw e;
       }
-
-      const project = c.get('project');
-
-      const actor = await getActorById(actorId);
-
-      if (!actor || actor.projectId !== project.id) {
-        return c.json(
-          {
-            message:
-              'No actor with corresponding ID found which belongs to given project',
-          },
-          StatusCodes.NOT_FOUND
-        );
-      }
-
-      return c.json({
-        data: actor,
-      });
-    } catch (e) {
-      logger.error('Failed to get actors:', e);
-      throw e;
     }
-  })
+  )
 
   /**
-   * @description Create a new actor
+   * @description Create a new project
    */
-  .post('/', jwt({ secret: environment.jwtSecret }), async c => {
-    try {
-      let newActor: unknown;
+  .post(
+    '/',
+    jwt({ secret: environment.jwtSecret }),
+    parseParamId('userId'),
+    async c => {
       try {
-        newActor = await c.req.json();
-      } catch {
-        return c.json({ message: 'Invalid JSON' }, StatusCodes.BAD_REQUEST);
+        let newProject: unknown;
+        try {
+          newProject = await c.req.json();
+        } catch {
+          return c.json({ message: 'Invalid JSON' }, StatusCodes.BAD_REQUEST);
+        }
+
+        const authenticatedUserId = c.get('jwtPayload').sub;
+
+        if (authenticatedUserId !== c.get('userId')) {
+          return c.json({ message: 'Unauthorized' }, StatusCodes.FORBIDDEN);
+        }
+
+        const validProject = await validateAndSanitizeNewProject(newProject);
+
+        if (!validProject.data) {
+          return c.json(
+            { message: 'Invalid data', errors: validProject.error },
+            StatusCodes.BAD_REQUEST
+          );
+        }
+
+        validProject.data.ownerId = authenticatedUserId;
+        const createdProject = await createProject(validProject.data);
+        return c.json(createdProject, StatusCodes.CREATED);
+      } catch (e) {
+        logger.error('Failed to create project:', e);
+        throw e;
       }
-
-      const validActor = await validateAndSanitizeNewActor(newActor);
-
-      if (!validActor.data) {
-        return c.json(
-          { message: 'Invalid data', errors: validActor.error },
-          StatusCodes.BAD_REQUEST
-        );
-      }
-
-      const createdActor = await createActor(validActor.data);
-      return c.json(createdActor, StatusCodes.CREATED);
-    } catch (e) {
-      logger.error('Failed to create actor:', e);
-      throw e;
     }
-  })
+  )
 
   /**
-   * @description Update an actor by ID
+   * @description Update a project by ID
    */
-  .patch('/:id', jwt({ secret: environment.jwtSecret }), async c => {
-    try {
-      let updatedActorInfo: unknown;
+  .patch(
+    '/:projectId',
+    jwt({ secret: environment.jwtSecret }),
+    parseParamId('userId'),
+    parseParamId('projectId'),
+    verifyProjectOwnership,
+    async c => {
       try {
-        updatedActorInfo = await c.req.json();
-      } catch {
-        return c.json({ message: 'Invalid JSON' }, StatusCodes.BAD_REQUEST);
+        let updatedProjectInfo: unknown;
+        try {
+          updatedProjectInfo = await c.req.json();
+        } catch {
+          return c.json({ message: 'Invalid JSON' }, StatusCodes.BAD_REQUEST);
+        }
+
+        const authenticatedUserId = c.get('jwtPayload').sub;
+
+        const validProject =
+          await validateAndSanitizeBaseProject(updatedProjectInfo);
+
+        if (!validProject.data) {
+          return c.json(
+            { message: 'Invalid data', errors: validProject.error },
+            StatusCodes.BAD_REQUEST
+          );
+        }
+
+        validProject.data.ownerId = authenticatedUserId;
+
+        const updatedProject = await updateProject(validProject.data);
+        return c.json(updatedProject);
+      } catch (e) {
+        logger.error('Failed to update project:', e);
+        throw e;
       }
-
-      const actorIdStr = c.req.param('id');
-      const actorId = parseInt(actorIdStr, 10);
-
-      if (isNaN(actorId)) {
-        return c.json({ message: 'Invalid ID' }, StatusCodes.BAD_REQUEST);
-      }
-
-      const project = c.get('project');
-      const actor = await getActorById(actorId);
-
-      if (!actor || actor.projectId !== project.id) {
-        return c.json(
-          {
-            message:
-              'No actor with corresponding ID found which belongs to given project',
-          },
-          StatusCodes.NOT_FOUND
-        );
-      }
-
-      const validActor = await validateAndSanitizeBaseActor(updatedActorInfo);
-
-      if (!validActor.data) {
-        return c.json(
-          { message: 'Invalid data', errors: validActor.error },
-          StatusCodes.BAD_REQUEST
-        );
-      }
-
-      validActor.data.id = actorId;
-
-      const updatedActor = await updateActor(validActor.data);
-      return c.json(updatedActor);
-    } catch (e) {
-      logger.error('Failed to update actor:', e);
-      throw e;
     }
-  })
+  )
 
   /**
    * @description Delete an actor by ID
    */
-  .delete('/:id', jwt({ secret: environment.jwtSecret }), async c => {
-    try {
-      const actorIdStr = c.req.param('id');
-      const actorId = parseInt(actorIdStr, 10);
-
-      if (isNaN(actorId)) {
-        return c.json({ message: 'Invalid ID' }, StatusCodes.BAD_REQUEST);
+  .delete(
+    '/:projectId',
+    jwt({ secret: environment.jwtSecret }),
+    parseParamId('userId'),
+    parseParamId('projectId'),
+    verifyProjectOwnership,
+    async c => {
+      try {
+        await deleteProject(c.get('projectId'));
+        return c.body(null, StatusCodes.NO_CONTENT);
+      } catch (e) {
+        logger.error('Failed to delete project:', e);
+        throw e;
       }
-
-      const project = c.get('project');
-      const actor = await getActorById(actorId);
-
-      if (!actor || actor.projectId !== project.id) {
-        return c.json(
-          {
-            message:
-              'No actor with corresponding ID found which belongs to given project',
-          },
-          StatusCodes.NOT_FOUND
-        );
-      }
-
-      await deleteActor(actorId);
-      return c.body(null, StatusCodes.NO_CONTENT);
-    } catch (e) {
-      logger.error('Failed to delete actor:', e);
-      throw e;
     }
-  })
+  )
 
   /**
    * @description Error handling for internal server errors

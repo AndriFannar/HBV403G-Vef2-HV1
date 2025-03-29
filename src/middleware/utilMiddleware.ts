@@ -17,14 +17,18 @@ import { StatusCodes } from 'http-status-codes';
  * @param next - The next middleware function.
  * @returns - A promise that resolves to the next middleware function.
  */
-const parseParamId = (paramName: string) => async (c: Context, next: Next) => {
-  const idStr = c.req.param(paramName);
-  const id = parseInt(idStr, 10);
+export const parseParamId =
+  (paramName: string) => async (c: Context, next: Next) => {
+    const idStr = c.req.param(paramName);
+    const id = parseInt(idStr, 10);
 
-  if (isNaN(id)) {
-    return c.json({ message: `Invalid ${paramName}` }, StatusCodes.BAD_REQUEST);
-  }
+    if (isNaN(id)) {
+      return c.json(
+        { message: `Invalid ${paramName}` },
+        StatusCodes.BAD_REQUEST
+      );
+    }
 
-  c.set(paramName, id);
-  return next();
-};
+    c.set(paramName, id);
+    return next();
+  };

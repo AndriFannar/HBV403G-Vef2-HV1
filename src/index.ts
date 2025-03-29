@@ -29,12 +29,18 @@ if (!env) {
 const app = new Hono()
   .route('/users', userApp)
   .route('/admin', adminApp)
-  .route('/projects', projectApp)
-  .route('/projects/:projectId/actors', actorApp)
-  .route('/projects/:projectId/useCases', useCaseApp)
-  .route('/projects/:projectId/businessRules', businessRuleApp)
-  .route('/projects/:projectId/useCases/:useCaseId/flows', flowApp)
-  .route('/projects/:projectId/useCases/:useCaseId/conditions', conditionApp);
+  .route('/users/:userId/projects', projectApp)
+  .route('/users/:userId/projects/:projectId/actors', actorApp)
+  .route('/users/:userId/projects/:projectId/useCases', useCaseApp)
+  .route('/users/:userId/projects/:projectId/businessRules', businessRuleApp)
+  .route(
+    '/users/:userId/projects/:projectId/useCases/:useCaseId/flows',
+    flowApp
+  )
+  .route(
+    '/users/:userId/projects/:projectId/useCases/:useCaseId/conditions',
+    conditionApp
+  );
 
 app.get('/', c => {
   const routes = [
@@ -42,12 +48,25 @@ app.get('/', c => {
     { method: 'POST', path: '/users/signup' },
     { method: 'GET', path: '/admin/users' },
     { method: 'GET', path: '/admin/actors' },
-    { method: 'GET', path: '/projects/summary/:userId' },
-    { method: 'GET', path: '/projects/:projectId/actors' },
-    { method: 'GET', path: '/projects/:projectId/actors/:actorId' },
-    { method: 'POST', path: '/projects/:projectId/actors/' },
-    { method: 'PATCH', path: '/projects/:projectId/actors/:actorId' },
-    { method: 'DELETE', path: '/projects/:projectId/actors/:actorId' },
+    { method: 'GET', path: '/users/:userId/projects/summary/' },
+    { method: 'GET', path: '/users/:userId/projects/:projectId' },
+    { method: 'POST', path: '/users/:userId/projects/' },
+    { method: 'PATCH', path: '/users/:userId/projects/:projectId' },
+    { method: 'DELETE', path: '/users/:userId/projects/:projectId' },
+    { method: 'GET', path: '/users/:userId/projects/:projectId/actors' },
+    {
+      method: 'GET',
+      path: '/users/:userId/projects/:projectId/actors/:actorId',
+    },
+    { method: 'POST', path: '/users/:userId/projects/:projectId/actors/' },
+    {
+      method: 'PATCH',
+      path: '/users/:userId/projects/:projectId/actors/:actorId',
+    },
+    {
+      method: 'DELETE',
+      path: '/users/:userId/projects/:projectId/actors/:actorId',
+    },
   ];
   return c.json(routes);
 });

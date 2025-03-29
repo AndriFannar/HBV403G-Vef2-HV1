@@ -37,7 +37,10 @@ export const NewUseCaseSchema = z.object({
   flows: z.array(NewFlowSchema).min(1, 'At least one Normal Flow is required'),
   priority: z.nativeEnum(Priority),
   freqUse: z.string().optional().nullable(),
-  businessRules: z.array(NewBusinessRuleSchema).optional().default([]),
+  businessRules: z
+    .array(z.lazy(() => NewBusinessRuleSchema))
+    .optional()
+    .default([]),
   otherInfo: z.array(z.string()).optional().nullable(),
   assumptions: z.array(z.string()).optional().nullable(),
 });

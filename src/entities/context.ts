@@ -11,7 +11,9 @@ import type { Actor } from './actor.js';
 import type { Project } from './project.js';
 
 export type Variables = {
-  id: number;
+  projectId: number;
+  userId: number;
+  actorId: number;
   project: Project;
   actor: Actor;
 };

@@ -31,8 +31,14 @@ export const BaseActorSchema = NewActorSchema.extend({
  * A schema for validating created actor.
  */
 export const ActorSchema = BaseActorSchema.extend({
-  useCasesPrimary: z.array(UseCaseSchema).optional().default([]),
-  useCasesSecondary: z.array(UseCaseSchema).optional().default([]),
+  useCasesPrimary: z
+    .array(z.lazy(() => UseCaseSchema))
+    .optional()
+    .default([]),
+  useCasesSecondary: z
+    .array(z.lazy(() => UseCaseSchema))
+    .optional()
+    .default([]),
 });
 
 export type NewActor = z.infer<typeof NewActorSchema>;

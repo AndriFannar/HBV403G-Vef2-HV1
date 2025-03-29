@@ -194,6 +194,10 @@ export async function getProjectById(id: number): Promise<Project | null> {
  * @returns - The created project.
  */
 export async function createProject(project: NewProject): Promise<BaseProject> {
+  if (!project.ownerId) {
+    throw new Error('Project must have an owner ID');
+  }
+
   let createdProject = await prisma.project.create({
     data: {
       name: project.name,
