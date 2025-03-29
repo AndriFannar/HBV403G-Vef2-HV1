@@ -7,8 +7,11 @@
  * @dependencies project.ts
  */
 
+import type { Actor } from './actor.js';
 import type { Project } from './project.js';
 
 export type Variables = {
+  id: number;
   project: Project;
+  actor: Actor;
 };

@@ -40,7 +40,7 @@ export const verifyProject = async (c: Context, next: Next) => {
   if (!project) {
     return c.json({ message: 'Project not found' }, StatusCodes.NOT_FOUND);
   }
-  if (project.ownerId !== payload.id && payload.role !== Role.ADMIN) {
+  if (project.ownerId !== payload.sub && payload.role !== Role.ADMIN) {
     return c.json({ message: 'Unauthorized' }, StatusCodes.FORBIDDEN);
   }
 

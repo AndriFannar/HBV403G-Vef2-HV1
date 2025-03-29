@@ -42,11 +42,12 @@ app.get('/', c => {
     { method: 'POST', path: '/users/signup' },
     { method: 'GET', path: '/admin/users' },
     { method: 'GET', path: '/admin/actors' },
+    { method: 'GET', path: '/projects/summary/:userId' },
     { method: 'GET', path: '/projects/:projectId/actors' },
-    { method: 'GET', path: '/projects/:projectId/actors/:id' },
+    { method: 'GET', path: '/projects/:projectId/actors/:actorId' },
     { method: 'POST', path: '/projects/:projectId/actors/' },
-    { method: 'PATCH', path: '/projects/:projectId/actors/:id' },
-    { method: 'DELETE', path: '/projects/:projectId/actors/:id' },
+    { method: 'PATCH', path: '/projects/:projectId/actors/:actorId' },
+    { method: 'DELETE', path: '/projects/:projectId/actors/:actorId' },
   ];
   return c.json(routes);
 });

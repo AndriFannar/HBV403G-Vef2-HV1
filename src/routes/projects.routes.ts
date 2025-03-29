@@ -11,7 +11,10 @@ import { Hono } from 'hono';
 import { getEnvironment } from '../lib/config/environment.js';
 import { logger } from '../lib/io/logger.js';
 import { jwt } from 'hono/jwt';
-import { getProjectSummaryById } from '../db/projects.db.js';
+import { getProjectSummaryByUserId } from '../db/projects.db.js';
+import { StatusCodes } from 'http-status-codes';
+import { parseId } from '../middleware/utilMiddleware.js';
+import type { Variables } from '../entities/context.js';
 
 const environment = getEnvironment(process.env, logger);
 
@@ -19,28 +22,81 @@ if (!environment) {
   process.exit(1);
 }
 
-export const projectApp = new Hono()
-
+export const projectApp = new Hono<{ Variables: Variables }>()
   /**
    * @description Get summary of projects by user ID
    */
-  .get('summary/:id', jwt({ secret: environment.jwtSecret }), async c => {
+  .get(
+    'summary/:id',
+    jwt({ secret: environment.jwtSecret }),
+    parseId,
+    async c => {
+      try {
+        const id = c.get('id');
+        console.log('Requested Summary for user ID:', id);
+        console.log('JWT Payload:', c.get('jwtPayload'));
+
+        if (c.get('jwtPayload').sub !== id) {
+          return c.json({ message: 'Unauthorized' }, StatusCodes.FORBIDDEN);
+        }
+
+        const limitStr = c.req.query('limit');
+        const offsetStr = c.req.query('offset');
+
+        const limit = limitStr ? parseInt(limitStr, 10) : undefined;
+        const offset = offsetStr ? parseInt(offsetStr, 10) : undefined;
+
+        const projects = await getProjectSummaryByUserId(id, limit, offset);
+
+        if (!projects) {
+          return c.json(
+            { message: 'No projects found' },
+            StatusCodes.NOT_FOUND
+          );
+        }
+
+        return c.json({
+          data: projects,
+          pagination: {
+            limit: limit || 'default',
+            offset: offset || 'default',
+          },
+        });
+      } catch (e) {
+        logger.error('Failed to get projects:', e);
+        throw e;
+      }
+    }
+  )
+
+  /**
+   * @description Get actor by ID
+   */
+  .get('/:id', jwt({ secret: environment.jwtSecret }), async c => {
     try {
-      const limitStr = c.req.query('limit');
-      const offsetStr = c.req.query('offset');
+      const actorIdStr = c.req.param('id');
+      const actorId = parseInt(actorIdStr, 10);
 
-      const limit = limitStr ? parseInt(limitStr, 10) : undefined;
-      const offset = offsetStr ? parseInt(offsetStr, 10) : undefined;
+      if (isNaN(actorId)) {
+        return c.json({ message: 'Invalid ID' }, StatusCodes.BAD_REQUEST);
+      }
 
-      const actors = await getProjectSummaryById(project.id, limit, offset);
+      const project = c.get('project');
 
-      if (!actors) {
-        return c.json({ message: 'No actors found' }, StatusCodes.NOT_FOUND);
+      const actor = await getActorById(actorId);
+
+      if (!actor || actor.projectId !== project.id) {
+        return c.json(
+          {
+            message:
+              'No actor with corresponding ID found which belongs to given project',
+          },
+          StatusCodes.NOT_FOUND
+        );
       }
 
       return c.json({
-        data: actors,
-        pagination: { limit: limit || 'default', offset: offset || 'default' },
+        data: actor,
       });
     } catch (e) {
       logger.error('Failed to get actors:', e);
@@ -49,49 +105,9 @@ export const projectApp = new Hono()
   })
 
   /**
-   * @description Get actor by ID
-   */
-  .get(
-    '/:id',
-    jwt({ secret: environment.jwtSecret }),
-    verifyProject,
-    async c => {
-      try {
-        const actorIdStr = c.req.param('id');
-        const actorId = parseInt(actorIdStr, 10);
-
-        if (isNaN(actorId)) {
-          return c.json({ message: 'Invalid ID' }, StatusCodes.BAD_REQUEST);
-        }
-
-        const project = c.get('project');
-
-        const actor = await getActorById(actorId);
-
-        if (!actor || actor.projectId !== project.id) {
-          return c.json(
-            {
-              message:
-                'No actor with corresponding ID found which belongs to given project',
-            },
-            StatusCodes.NOT_FOUND
-          );
-        }
-
-        return c.json({
-          data: actor,
-        });
-      } catch (e) {
-        logger.error('Failed to get actors:', e);
-        throw e;
-      }
-    }
-  )
-
-  /**
    * @description Create a new actor
    */
-  .post('/', jwt({ secret: environment.jwtSecret }), verifyProject, async c => {
+  .post('/', jwt({ secret: environment.jwtSecret }), async c => {
     try {
       let newActor: unknown;
       try {
@@ -120,96 +136,86 @@ export const projectApp = new Hono()
   /**
    * @description Update an actor by ID
    */
-  .patch(
-    '/:id',
-    jwt({ secret: environment.jwtSecret }),
-    verifyProject,
-    async c => {
+  .patch('/:id', jwt({ secret: environment.jwtSecret }), async c => {
+    try {
+      let updatedActorInfo: unknown;
       try {
-        let updatedActorInfo: unknown;
-        try {
-          updatedActorInfo = await c.req.json();
-        } catch {
-          return c.json({ message: 'Invalid JSON' }, StatusCodes.BAD_REQUEST);
-        }
-
-        const actorIdStr = c.req.param('id');
-        const actorId = parseInt(actorIdStr, 10);
-
-        if (isNaN(actorId)) {
-          return c.json({ message: 'Invalid ID' }, StatusCodes.BAD_REQUEST);
-        }
-
-        const project = c.get('project');
-        const actor = await getActorById(actorId);
-
-        if (!actor || actor.projectId !== project.id) {
-          return c.json(
-            {
-              message:
-                'No actor with corresponding ID found which belongs to given project',
-            },
-            StatusCodes.NOT_FOUND
-          );
-        }
-
-        const validActor = await validateAndSanitizeBaseActor(updatedActorInfo);
-
-        if (!validActor.data) {
-          return c.json(
-            { message: 'Invalid data', errors: validActor.error },
-            StatusCodes.BAD_REQUEST
-          );
-        }
-
-        validActor.data.id = actorId;
-
-        const updatedActor = await updateActor(validActor.data);
-        return c.json(updatedActor);
-      } catch (e) {
-        logger.error('Failed to update actor:', e);
-        throw e;
+        updatedActorInfo = await c.req.json();
+      } catch {
+        return c.json({ message: 'Invalid JSON' }, StatusCodes.BAD_REQUEST);
       }
+
+      const actorIdStr = c.req.param('id');
+      const actorId = parseInt(actorIdStr, 10);
+
+      if (isNaN(actorId)) {
+        return c.json({ message: 'Invalid ID' }, StatusCodes.BAD_REQUEST);
+      }
+
+      const project = c.get('project');
+      const actor = await getActorById(actorId);
+
+      if (!actor || actor.projectId !== project.id) {
+        return c.json(
+          {
+            message:
+              'No actor with corresponding ID found which belongs to given project',
+          },
+          StatusCodes.NOT_FOUND
+        );
+      }
+
+      const validActor = await validateAndSanitizeBaseActor(updatedActorInfo);
+
+      if (!validActor.data) {
+        return c.json(
+          { message: 'Invalid data', errors: validActor.error },
+          StatusCodes.BAD_REQUEST
+        );
+      }
+
+      validActor.data.id = actorId;
+
+      const updatedActor = await updateActor(validActor.data);
+      return c.json(updatedActor);
+    } catch (e) {
+      logger.error('Failed to update actor:', e);
+      throw e;
     }
-  )
+  })
 
   /**
    * @description Delete an actor by ID
    */
-  .delete(
-    '/:id',
-    jwt({ secret: environment.jwtSecret }),
-    verifyProject,
-    async c => {
-      try {
-        const actorIdStr = c.req.param('id');
-        const actorId = parseInt(actorIdStr, 10);
+  .delete('/:id', jwt({ secret: environment.jwtSecret }), async c => {
+    try {
+      const actorIdStr = c.req.param('id');
+      const actorId = parseInt(actorIdStr, 10);
 
-        if (isNaN(actorId)) {
-          return c.json({ message: 'Invalid ID' }, StatusCodes.BAD_REQUEST);
-        }
-
-        const project = c.get('project');
-        const actor = await getActorById(actorId);
-
-        if (!actor || actor.projectId !== project.id) {
-          return c.json(
-            {
-              message:
-                'No actor with corresponding ID found which belongs to given project',
-            },
-            StatusCodes.NOT_FOUND
-          );
-        }
-
-        await deleteActor(actorId);
-        return c.body(null, StatusCodes.NO_CONTENT);
-      } catch (e) {
-        logger.error('Failed to delete actor:', e);
-        throw e;
+      if (isNaN(actorId)) {
+        return c.json({ message: 'Invalid ID' }, StatusCodes.BAD_REQUEST);
       }
+
+      const project = c.get('project');
+      const actor = await getActorById(actorId);
+
+      if (!actor || actor.projectId !== project.id) {
+        return c.json(
+          {
+            message:
+              'No actor with corresponding ID found which belongs to given project',
+          },
+          StatusCodes.NOT_FOUND
+        );
+      }
+
+      await deleteActor(actorId);
+      return c.body(null, StatusCodes.NO_CONTENT);
+    } catch (e) {
+      logger.error('Failed to delete actor:', e);
+      throw e;
     }
-  )
+  })
 
   /**
    * @description Error handling for internal server errors
