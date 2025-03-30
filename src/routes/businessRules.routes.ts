@@ -4,27 +4,27 @@
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
  * @date March 27, 2025
- * @dependencies
+ * @dependencies projectMiddleware, utilMiddleware, config/environment, io/logger, db/businessRules.db, validation/businessRuleValidator, hono/jwt, hono, http-status-codes, entities/context
  */
 
-import { Hono, type Context, type Next } from 'hono';
+import { verifyProjectOwnership } from '../middleware/ownershipVerificationMiddleware.js';
+import { parseParamId } from '../middleware/utilMiddleware.js';
 import { getEnvironment } from '../lib/config/environment.js';
+import type { Variables } from '../entities/context.js';
+import { Hono, type Context, type Next } from 'hono';
+import { StatusCodes } from 'http-status-codes';
 import { logger } from '../lib/io/logger.js';
 import { jwt } from 'hono/jwt';
-import { parseParamId } from '../middleware/utilMiddleware.js';
-import { verifyProjectOwnership } from '../middleware/projectMiddleware.js';
-import type { Variables } from '../entities/context.js';
 import {
   createBusinessRule,
+  updateBusinessRule,
   deleteBusinessRule,
   getBusinessRuleById,
   getBusinessRulesByProjectId,
-  updateBusinessRule,
 } from '../db/businessRules.db.js';
-import { StatusCodes } from 'http-status-codes';
 import {
-  validateAndSanitizeBaseBusinessRule,
   validateAndSanitizeNewBusinessRule,
+  validateAndSanitizeBaseBusinessRule,
 } from '../lib/validation/businessRuleValidator.js';
 
 const environment = getEnvironment(process.env, logger);

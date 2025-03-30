@@ -17,7 +17,7 @@ import { z } from 'zod';
 export const NewConditionSchema = z.object({
   description: z.string().min(1, 'Description is required'),
   conditionType: z.nativeEnum(ConditionType),
-  useCaseId: z.number().positive('Use case ID must be positive'),
+  useCaseId: z.number().positive('Use case ID must be positive').optional(),
 });
 
 /**
@@ -25,6 +25,7 @@ export const NewConditionSchema = z.object({
  */
 export const ConditionSchema = NewConditionSchema.extend({
   id: z.number().positive('ID must be a positive number'),
+  useCaseId: z.number().positive('Use case ID must be positive'),
 }).merge(Referencible);
 
 export type NewCondition = z.infer<typeof NewConditionSchema>;

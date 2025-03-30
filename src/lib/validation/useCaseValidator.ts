@@ -17,11 +17,11 @@ type ValidateUseCase = z.infer<
 >;
 
 /**
- * Validates and sanitizes a base (new) useCase.
+ * Validates and sanitizes a new useCase.
  * @param data - The useCase data to validate and sanitize.
  * @returns An object with either the sanitized data or an error.
  */
-export const validateAndSanitizeBaseUseCase = async (
+export const validateAndSanitizeNewUseCase = async (
   data: unknown
 ): Promise<ValidateUseCase> => {
   const parsed = await NewUseCaseSchema.safeParseAsync(data);
@@ -30,10 +30,11 @@ export const validateAndSanitizeBaseUseCase = async (
   }
 
   const sanitizedData = {
+    id: parsed.data.id ? parsed.data.id : undefined,
     projectId: parsed.data.projectId,
     name: sanitizeString(parsed.data.name),
     creatorId: parsed.data.creatorId,
-    primaryActorId: parsed.data.primaryActorId,
+    primaryActor: parsed.data.primaryActor,
     secondaryActors: parsed.data.secondaryActors,
     description: sanitizeString(parsed.data.description),
     trigger: sanitizeString(parsed.data.trigger),

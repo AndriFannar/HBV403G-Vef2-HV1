@@ -4,10 +4,10 @@
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
  * @date March 27, 2025
- * @dependencies
+ * @dependencies projectMiddleware, config/environment, db/businessRules.db, db/projects.db, lib/io/logger, hono/jwt, hono
  */
 
-import { verifyProjectOwnership } from '../middleware/projectMiddleware.js';
+import { verifyProjectOwnership } from '../middleware/ownershipVerificationMiddleware.js';
 import { parseParamId } from '../middleware/utilMiddleware.js';
 import { getEnvironment } from '../lib/config/environment.js';
 import type { Variables } from '../entities/context.js';
@@ -16,10 +16,9 @@ import { logger } from '../lib/io/logger.js';
 import { jwt } from 'hono/jwt';
 import { Hono } from 'hono';
 import {
-  deleteProject,
-  updateProject,
   createProject,
-  getProjectById,
+  updateProject,
+  deleteProject,
   getProjectSummaryByUserId,
 } from '../db/projects.db.js';
 import {
@@ -86,26 +85,10 @@ export const projectApp = new Hono<{ Variables: Variables }>()
     jwt({ secret: environment.jwtSecret }),
     parseParamId('userId'),
     parseParamId('projectId'),
+    verifyProjectOwnership(true),
     async c => {
       try {
-        const payload = await c.get('jwtPayload');
-        const userId = c.get('userId');
-        const projectId = c.get('projectId');
-
-        const project = await getProjectById(projectId);
-
-        if (
-          !project ||
-          !(project.ownerId === payload.sub && payload.sub === userId)
-        ) {
-          return c.json(
-            {
-              message:
-                'No Project with corresponding ID found which belongs to authenticated user',
-            },
-            StatusCodes.NOT_FOUND
-          );
-        }
+        const project = c.get('project');
 
         return c.json({
           data: project,

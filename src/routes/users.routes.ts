@@ -4,7 +4,7 @@
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
  * @date March 04, 2025
- * @dependencies hono, logger.ts, userValidator.ts, users.db.ts, http-status-codes
+ * @dependencies hono, logger.ts, userValidator.ts, users.db.ts, http-status-codes, bcrypt, hono/jwt
  */
 
 import { validateAndSanitizeBaseUser } from '../lib/validation/userValidator.js';
@@ -12,9 +12,12 @@ import { createUser, getUserByUsername } from '../db/users.db.js';
 import { getEnvironment } from '../lib/config/environment.js';
 import { StatusCodes } from 'http-status-codes';
 import { logger } from '../lib/io/logger.js';
-import { sign } from 'hono/jwt';
+import { jwt, sign } from 'hono/jwt';
 import { Hono } from 'hono';
 import bcrypt from 'bcrypt';
+import { parseParamId } from '../middleware/utilMiddleware.js';
+import { getUseCasesSummaryByUserId } from '../db/useCases.db.js';
+import type { Variables } from '../entities/context.js';
 
 const environment = getEnvironment(process.env, logger);
 
@@ -24,7 +27,7 @@ if (!environment) {
 
 const saltRounds = 10;
 
-export const userApp = new Hono()
+export const userApp = new Hono<{ Variables: Variables }>()
   /**
    * @description Get a user by username
    */
@@ -108,6 +111,49 @@ export const userApp = new Hono()
       throw e;
     }
   })
+
+  /**
+   * @description Get summary of use cases by user ID
+   */
+  .get(
+    '/:userId/useCases/summary',
+    jwt({ secret: environment.jwtSecret }),
+    parseParamId('userId'),
+    async c => {
+      try {
+        const userId = c.get('userId');
+        const limitStr = c.req.query('limit');
+        const offsetStr = c.req.query('offset');
+
+        const limit = limitStr ? parseInt(limitStr, 10) : undefined;
+        const offset = offsetStr ? parseInt(offsetStr, 10) : undefined;
+
+        const useCases = await getUseCasesSummaryByUserId(
+          userId,
+          limit,
+          offset
+        );
+
+        if (!useCases) {
+          return c.json(
+            { message: 'No Use Cases found' },
+            StatusCodes.NOT_FOUND
+          );
+        }
+
+        return c.json({
+          data: useCases,
+          pagination: {
+            limit: limit || 'default',
+            offset: offset || 'default',
+          },
+        });
+      } catch (e) {
+        logger.error('Failed to get Use Cases:', e);
+        throw e;
+      }
+    }
+  )
 
   /**
    * @description Error handling for internal server errors

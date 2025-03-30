@@ -17,6 +17,7 @@ import {
   generateConditionPublicId,
   generateBusinessRulePublicId,
 } from './publicIdGenerators.js';
+import type { NewActor } from '../entities/actor.js';
 
 const MAX_RANDINT = 281474976710655;
 const DEF_NUM_FULL_USECASES = 5;
@@ -48,9 +49,13 @@ export async function getAllUseCases(
  * @returns - The useCases for the user ID, if they exist. Otherwise, returns an empty array.
  */
 export async function getUseCasesSummaryByUserId(
-  userId: number
+  userId: number,
+  limit: number = DEF_NUM_USECASES,
+  offset: number = 0
 ): Promise<Array<BaseUseCase>> {
   const useCases = await prisma.useCase.findMany({
+    skip: offset,
+    take: limit,
     where: {
       creatorId: userId,
     },
@@ -64,9 +69,13 @@ export async function getUseCasesSummaryByUserId(
  * @returns - The useCases for the project ID, if they exist. Otherwise, returns an empty array.
  */
 export async function getUseCasesSummaryByProjectId(
-  projectId: number
+  projectId: number,
+  limit: number = DEF_NUM_USECASES,
+  offset: number = 0
 ): Promise<Array<BaseUseCase>> {
   const useCases = await prisma.useCase.findMany({
+    skip: offset,
+    take: limit,
     where: {
       projectId: projectId,
     },
@@ -100,6 +109,7 @@ export async function getFullUseCasesByProjectId(
         },
       },
       businessRules: true,
+      primaryActor: true,
       secondaryActors: true,
       useCaseSequences: true,
     },
@@ -127,8 +137,25 @@ export async function getUseCaseBySlug(slug: string): Promise<UseCase | null> {
         },
       },
       businessRules: true,
+      primaryActor: true,
       secondaryActors: true,
       useCaseSequences: true,
+    },
+  });
+  return useCase ?? null;
+}
+
+/**
+ * Gets base useCase by ID.
+ * @param id - The ID of the useCase to fetch.
+ * @returns - The useCase corresponding to given ID, if it exists. Otherwise, returns null.
+ */
+export async function getUseCaseSummaryById(
+  id: number
+): Promise<BaseUseCase | null> {
+  const useCase = await prisma.useCase.findUnique({
+    where: {
+      id: id,
     },
   });
   return useCase ?? null;
@@ -154,6 +181,7 @@ export async function getUseCaseById(id: number): Promise<UseCase | null> {
         },
       },
       businessRules: true,
+      primaryActor: true,
       secondaryActors: true,
       useCaseSequences: true,
     },
@@ -161,9 +189,54 @@ export async function getUseCaseById(id: number): Promise<UseCase | null> {
   return useCase ?? null;
 }
 
+/**
+ * Processes an actor for a useCase.
+ * @param tx - The Prisma transaction client.
+ * @param actor - The actor to process.
+ * @param projectId - The ID of the project to which the actor belongs.
+ * @returns - The processed actor data.
+ */
+async function processActor(
+  tx: Prisma.TransactionClient,
+  actor: NewActor,
+  projectId: number
+) {
+  if (actor.id !== null) {
+    const existingActor = await tx.actor.findUnique({
+      where: { id: actor.id },
+      select: { projectId: true },
+    });
+    if (!existingActor) {
+      throw new Error(`Actor with id ${actor.id} not found`);
+    }
+    if (existingActor.projectId !== projectId) {
+      throw new Error(
+        `Actor with id ${actor.id} does not belong to the specified project`
+      );
+    }
+    return { connect: { id: actor.id } };
+  } else {
+    return {
+      create: {
+        name: actor.name,
+        description: actor.description,
+        project: { connect: { id: projectId } },
+      },
+    };
+  }
+}
+
+/**
+ * Verifies nested relations for a useCase.
+ * @param tx - The Prisma transaction client.
+ * @param useCase - The useCase to verify.
+ * @param useCaseId - The ID of the useCase.
+ * @returns - The verified data for the useCase.
+ */
 async function verifyNestedRelations(
   tx: Prisma.TransactionClient,
-  useCase: NewUseCase
+  useCase: NewUseCase,
+  useCaseId: number
 ) {
   let conditionsData;
   try {
@@ -171,7 +244,7 @@ async function verifyNestedRelations(
       useCase.conditions.map(async c => ({
         description: c.description,
         conditionType: c.conditionType,
-        publicId: await generateConditionPublicId(tx, c),
+        publicId: await generateConditionPublicId(tx, c, useCaseId),
       }))
     );
   } catch (error) {
@@ -197,66 +270,24 @@ async function verifyNestedRelations(
             },
           })),
         },
-        publicId: await generateFlowPublicId(tx, f),
+        publicId: await generateFlowPublicId(tx, f, useCaseId),
       }))
     );
   } catch (error) {
     throw new Error('Error creating flows:' + error);
   }
 
-  const primaryActor = await prisma.actor.findUnique({
-    where: { id: useCase.primaryActorId },
-    select: { projectId: true },
-  });
-  if (!primaryActor) {
-    throw new Error(
-      `Primary actor with id ${useCase.primaryActorId} not found`
-    );
-  }
-  if (primaryActor.projectId !== useCase.projectId) {
-    throw new Error(
-      `Primary actor with id ${useCase.primaryActorId} does not belong to the specified project`
-    );
-  }
+  const primaryActorOp = await processActor(
+    tx,
+    useCase.primaryActor,
+    useCase.projectId
+  );
 
-  let actorsConnect;
-  try {
-    actorsConnect = await Promise.all(
-      useCase.secondaryActors
-        .filter(act => act.id !== null)
-        .map(async act => {
-          const id = act.id!;
-          const existingAct = await prisma.actor.findUnique({
-            where: { id: id },
-            select: { projectId: true },
-          });
-          if (!existingAct) {
-            throw new Error(`Actor with id ${id} not found`);
-          }
-          if (existingAct.projectId !== useCase.projectId) {
-            throw new Error(
-              `Actor with id ${id} does not belong to the specified project`
-            );
-          }
-          return { id: id };
-        })
-    );
-  } catch (error) {
-    throw new Error('Error connecting actors:' + error);
-  }
-
-  let actorsCreate;
-  try {
-    actorsCreate = useCase.secondaryActors
-      .filter(act => act.id === null)
-      .map(act => ({
-        name: act.name,
-        description: act.description,
-        project: { connect: { id: useCase.projectId } },
-      }));
-  } catch (error) {
-    throw new Error('Error creating actors:' + error);
-  }
+  const secondaryActorsOp = await Promise.all(
+    useCase.secondaryActors.map(async actor => {
+      return processActor(tx, actor, useCase.projectId);
+    })
+  );
 
   let businessRulesConnect;
   try {
@@ -314,8 +345,8 @@ async function verifyNestedRelations(
   return {
     conditionsData,
     flowsData,
-    actorsConnect,
-    actorsCreate,
+    primaryActorOp,
+    secondaryActorsOp,
     businessRulesConnect,
     businessRulesCreate,
   };
@@ -330,11 +361,8 @@ export async function createUseCase(useCase: NewUseCase): Promise<UseCase> {
   return await prisma.$transaction(async tx => {
     const publicId = await generateUseCasePublicId(tx, useCase);
 
-    let verifiedData;
-    try {
-      verifiedData = await verifyNestedRelations(tx, useCase);
-    } catch (error) {
-      throw new Error('Error verifying nested relations:' + error);
+    if (!useCase.creatorId) {
+      throw new Error('Creator ID is required');
     }
 
     const createdUseCase = await tx.useCase.create({
@@ -344,25 +372,10 @@ export async function createUseCase(useCase: NewUseCase): Promise<UseCase> {
         slug: randomInt(MAX_RANDINT).toString(),
         name: useCase.name,
         creatorId: useCase.creatorId,
-        primaryActorId: useCase.primaryActorId,
-        secondaryActors: {
-          connect: verifiedData.actorsConnect,
-          create: verifiedData.actorsCreate,
-        },
         description: useCase.description,
         trigger: useCase.trigger,
-        conditions: {
-          create: verifiedData.conditionsData,
-        },
-        flows: {
-          create: verifiedData.flowsData,
-        },
         priority: useCase.priority,
         freqUse: useCase.freqUse ? useCase.freqUse : '',
-        businessRules: {
-          connect: verifiedData.businessRulesConnect,
-          create: verifiedData.businessRulesCreate,
-        },
         otherInfo: useCase.otherInfo?.length ? useCase.otherInfo : [],
         assumptions: useCase.assumptions?.length ? useCase.assumptions : [],
         useCaseSequences: {
@@ -376,18 +389,41 @@ export async function createUseCase(useCase: NewUseCase): Promise<UseCase> {
       },
     });
 
+    let verifiedData;
+    try {
+      verifiedData = await verifyNestedRelations(
+        tx,
+        useCase,
+        createdUseCase.id
+      );
+    } catch (error) {
+      throw new Error('Error verifying nested relations:' + error);
+    }
+
     const newSlug = generateSlug(
       createdUseCase.name,
       createdUseCase.id,
       createdUseCase.publicId
     );
 
-    return await prisma.useCase.update({
+    return await tx.useCase.update({
       where: {
         id: createdUseCase.id,
       },
       data: {
         slug: newSlug,
+        primaryActor: verifiedData.primaryActorOp,
+        secondaryActors: { verifiedData.secondaryActorsOp },
+        conditions: {
+          create: verifiedData.conditionsData,
+        },
+        flows: {
+          create: verifiedData.flowsData,
+        },
+        businessRules: {
+          connect: verifiedData.businessRulesConnect,
+          create: verifiedData.businessRulesCreate,
+        },
       },
       include: {
         conditions: true,
@@ -412,11 +448,17 @@ export async function createUseCase(useCase: NewUseCase): Promise<UseCase> {
  * @param useCase - The new useCase data.
  * @returns - The updated useCase, if it exists. Otherwise, returns null.
  */
-export async function updateUseCase(useCase: UseCase): Promise<UseCase | null> {
+export async function updateUseCase(
+  useCase: NewUseCase
+): Promise<UseCase | null> {
   return await prisma.$transaction(async tx => {
+    if (!useCase.id) {
+      throw new Error('UseCase ID is required');
+    }
+
     let verifiedData;
     try {
-      verifiedData = await verifyNestedRelations(tx, useCase);
+      verifiedData = await verifyNestedRelations(tx, useCase, useCase.id);
     } catch (error) {
       throw new Error('Error verifying nested relations:' + error);
     }

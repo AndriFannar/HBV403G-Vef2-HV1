@@ -4,13 +4,14 @@
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
  * @date March 27, 2025
- * @dependencies
+ * @dependencies adminMiddleware, config/environment, db/businessRules.db, db/projects.db, db/actor.db, db/users.db, lib/io/logger, hono/jwt, hono
  */
 
 import { adminMiddleware } from '../middleware/adminMiddleware.js';
 import { getAllBusinessRules } from '../db/businessRules.db.js';
 import { getEnvironment } from '../lib/config/environment.js';
 import { getAllProjects } from '../db/projects.db.js';
+import { getAllUseCases } from '../db/useCases.db.js';
 import { getAllActors } from '../db/actor.db.js';
 import { getAllUsers } from '../db/users.db.js';
 import { logger } from '../lib/io/logger.js';
@@ -92,6 +93,24 @@ export const adminApp = new Hono()
         return c.json(businessRules);
       } catch (e) {
         logger.error('Failed to get Business Rules:', e);
+        throw e;
+      }
+    }
+  )
+
+  /**
+   * @description Get all use cases
+   */
+  .get(
+    '/useCases',
+    jwt({ secret: environment.jwtSecret }),
+    adminMiddleware,
+    async c => {
+      try {
+        const useCases = await getAllUseCases();
+        return c.json(useCases);
+      } catch (e) {
+        logger.error('Failed to get Use Cases:', e);
         throw e;
       }
     }

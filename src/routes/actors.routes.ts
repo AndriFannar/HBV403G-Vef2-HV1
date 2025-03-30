@@ -4,10 +4,10 @@
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
  * @date March 27, 2025
- * @dependencies
+ * @dependencies projectMiddleware, utilMiddleware, config/environment, io/logger, db/actor.db, validation/actorValidator, hono/jwt, hono, http-status-codes, entities/context
  */
 
-import { verifyProjectOwnership } from '../middleware/projectMiddleware.js';
+import { verifyProjectOwnership } from '../middleware/ownershipVerificationMiddleware.js';
 import { parseParamId } from '../middleware/utilMiddleware.js';
 import { getEnvironment } from '../lib/config/environment.js';
 import type { Variables } from '../entities/context.js';

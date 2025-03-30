@@ -50,6 +50,7 @@ app.get('/', c => {
     { method: 'GET', path: '/admin/projects' },
     { method: 'GET', path: '/admin/actors' },
     { method: 'GET', path: '/admin/businessRules' },
+    { method: 'GET', path: '/admin/useCases' },
     { method: 'GET', path: '/users/:userId/projects/summary' },
     { method: 'GET', path: '/users/:userId/projects/:projectId' },
     { method: 'POST', path: '/users/:userId/projects/' },
@@ -85,6 +86,11 @@ app.get('/', c => {
     {
       method: 'DELETE',
       path: '/users/:userId/projects/:projectId/businessRules/:businessRuleId',
+    },
+    { method: 'GET', path: '/users/:userId/useCases/summary' },
+    {
+      method: 'GET',
+      path: '/users/:userId/projects/:projectId/useCases/summary',
     },
   ];
   return c.json(routes);

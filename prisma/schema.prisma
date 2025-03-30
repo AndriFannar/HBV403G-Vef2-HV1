@@ -32,7 +32,7 @@ enum ReferenceType {
 
 enum Priority {
   LOW
-  NORMAL
+  MEDIUM
   HIGH
 }
 
@@ -130,7 +130,7 @@ model UseCase {
   conditions       Condition[]
   flows            Flow[]
   useCaseSequences UseCaseSequence[]
-  priority         Priority          @default(NORMAL)
+  priority         Priority          @default(MEDIUM)
   freqUse          String
   businessRules    BusinessRule[]
   otherInfo        String[]
