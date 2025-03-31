@@ -221,6 +221,7 @@ async function processActor(
         name: actor.name,
         description: actor.description,
         project: { connect: { id: projectId } },
+        projectId: projectId,
       },
     };
   }
