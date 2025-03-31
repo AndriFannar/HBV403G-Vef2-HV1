@@ -9,6 +9,7 @@
 
 import type { UseCase, NewUseCase, BaseUseCase } from '../entities/useCase.js';
 import { Prisma, PrismaClient, UseCaseCounterType } from '@prisma/client';
+import type { NewActor } from '../entities/actor.js';
 import { generateSlug } from '../lib/slugUtils.js';
 import { randomInt } from 'crypto';
 import {
@@ -17,8 +18,6 @@ import {
   generateConditionPublicId,
   generateBusinessRulePublicId,
 } from './publicIdGenerators.js';
-import type { NewActor } from '../entities/actor.js';
-import { use } from 'hono/jsx';
 
 const MAX_RANDINT = 281474976710655;
 const DEF_NUM_FULL_USECASES = 5;
@@ -278,12 +277,6 @@ async function verifyNestedRelations(
     throw new Error('Error creating flows:' + error);
   }
 
-  const primaryActorOp = await processActor(
-    tx,
-    useCase.primaryActor,
-    useCase.projectId
-  );
-
   const secondaryActorsOp = await Promise.all(
     useCase.secondaryActors.map(async actor => {
       return processActor(tx, actor, useCase.projectId);
@@ -346,9 +339,7 @@ async function verifyNestedRelations(
   return {
     conditionsData,
     flowsData,
-    primaryActorOp,
-    connectSecondaryOps,
-    createSecondaryOps,
+    secondaryActorsOp,
     businessRulesConnect,
     businessRulesCreate,
   };
@@ -356,7 +347,9 @@ async function verifyNestedRelations(
 
 /**
  * Creates a new useCase.
+ * @requires The creatorId must be set inside the useCase object.
  * @param useCase - The new useCase to create.
+ * @throws Error if the useCase does not have a creatorId.
  * @returns - The created useCase.
  */
 export async function createUseCase(useCase: NewUseCase): Promise<UseCase> {
@@ -367,35 +360,25 @@ export async function createUseCase(useCase: NewUseCase): Promise<UseCase> {
       throw new Error('Creator ID is required');
     }
 
-    // TODO: Rework this to use a more efficient way to check for existing actors / use some existing method
-    let primaryActorId;
-    if (!useCase.primaryActor.id) {
-      const actor = await tx.actor.create({
-        data: {
-          name: useCase.primaryActor.name,
-          description: useCase.primaryActor.description,
-          project: { connect: { id: useCase.projectId } },
-        },
+    // Process Primary Actor
+    const primaryActorOp = await processActor(
+      tx,
+      useCase.primaryActor,
+      useCase.projectId
+    );
+    let primaryActorId: number;
+    if (primaryActorOp.connect?.id !== undefined) {
+      primaryActorId = primaryActorOp.connect.id;
+    } else if ('create' in primaryActorOp && primaryActorOp.create) {
+      const createdActor = await tx.actor.create({
+        data: primaryActorOp.create,
       });
-      primaryActorId = actor.id;
+      primaryActorId = createdActor.id;
     } else {
-      const existingActor = await tx.actor.findUnique({
-        where: { id: useCase.primaryActor.id },
-        select: { projectId: true },
-      });
-      if (!existingActor) {
-        throw new Error(
-          `Primary actor with id ${useCase.primaryActor.id} not found`
-        );
-      }
-      if (existingActor.projectId !== useCase.projectId) {
-        throw new Error(
-          `Primary actor with id ${useCase.primaryActor.id} does not belong to the specified project`
-        );
-      }
-      primaryActorId = useCase.primaryActor.id;
+      throw new Error('Invalid primary actor data');
     }
 
+    // Create Base UseCase
     const createdUseCase = await tx.useCase.create({
       data: {
         projectId: useCase.projectId,
@@ -421,6 +404,7 @@ export async function createUseCase(useCase: NewUseCase): Promise<UseCase> {
       },
     });
 
+    // Verify relaion data
     let verifiedData;
     try {
       verifiedData = await verifyNestedRelations(
@@ -432,12 +416,21 @@ export async function createUseCase(useCase: NewUseCase): Promise<UseCase> {
       throw new Error('Error verifying nested relations:' + error);
     }
 
+    // Separate actors into those needed to connect and those to create
+    const secondaryActorsConnect = verifiedData.secondaryActorsOp
+      .filter(op => 'connect' in op)
+      .map(op => (op as { connect: { id: number } }).connect);
+    const secondaryActorsCreate = verifiedData.secondaryActorsOp
+      .filter(op => 'create' in op)
+      .map(op => (op as { create: never }).create);
+
     const newSlug = generateSlug(
       createdUseCase.name,
       createdUseCase.id,
       createdUseCase.publicId
     );
 
+    // Update the use case with all the relations needed.
     return await tx.useCase.update({
       where: {
         id: createdUseCase.id,
@@ -445,8 +438,8 @@ export async function createUseCase(useCase: NewUseCase): Promise<UseCase> {
       data: {
         slug: newSlug,
         secondaryActors: {
-          connect: verifiedData.connectSecondaryOps,
-          create: verifiedData.createSecondaryOps,
+          connect: secondaryActorsConnect,
+          create: secondaryActorsCreate,
         },
         conditions: {
           create: verifiedData.conditionsData,
@@ -470,6 +463,7 @@ export async function createUseCase(useCase: NewUseCase): Promise<UseCase> {
             },
           },
         },
+        primaryActor: true,
         secondaryActors: true,
         businessRules: true,
       },
@@ -479,17 +473,55 @@ export async function createUseCase(useCase: NewUseCase): Promise<UseCase> {
 
 /**
  * Updates a useCase by ID.
+ * @requires The useCaseId must be set inside the useCase object.
  * @param useCase - The new useCase data.
+ * @throws Error if the useCase does not have a useCaseId.
  * @returns - The updated useCase, if it exists. Otherwise, returns null.
  */
 export async function updateUseCase(
   useCase: NewUseCase
 ): Promise<UseCase | null> {
   return await prisma.$transaction(async tx => {
+    // Verify existance and ownership of the useCase
     if (!useCase.id) {
       throw new Error('UseCase ID is required');
     }
+    const existingUseCase = await tx.useCase.findUnique({
+      where: { id: useCase.id },
+    });
+    if (!existingUseCase) {
+      return null;
+    }
+    if (existingUseCase.projectId !== useCase.projectId) {
+      throw new Error(
+        `UseCase with id ${useCase.id} does not belong to the specified project`
+      );
+    }
+    if (existingUseCase.creatorId !== useCase.creatorId) {
+      throw new Error(
+        `UseCase with id ${useCase.id} does not belong to the specified user`
+      );
+    }
 
+    // Process Primary Actor
+    const primaryActorOp = await processActor(
+      tx,
+      useCase.primaryActor,
+      useCase.projectId
+    );
+    let primaryActorId: number;
+    if (primaryActorOp.connect?.id !== undefined) {
+      primaryActorId = primaryActorOp.connect.id;
+    } else if ('create' in primaryActorOp && primaryActorOp.create) {
+      const createdActor = await tx.actor.create({
+        data: primaryActorOp.create,
+      });
+      primaryActorId = createdActor.id;
+    } else {
+      throw new Error('Invalid primary actor data');
+    }
+
+    // Verify nested relations
     let verifiedData;
     try {
       verifiedData = await verifyNestedRelations(tx, useCase, useCase.id);
@@ -497,39 +529,24 @@ export async function updateUseCase(
       throw new Error('Error verifying nested relations:' + error);
     }
 
-    const existingUseCase = await tx.useCase.findUnique({
-      where: { id: useCase.id },
-    });
+    // Separate actors into those needed to connect and those to create
+    const secondaryActorsConnect = verifiedData.secondaryActorsOp
+      .filter(op => 'connect' in op)
+      .map(op => (op as { connect: { id: number } }).connect);
+    const secondaryActorsCreate = verifiedData.secondaryActorsOp
+      .filter(op => 'create' in op)
+      .map(op => (op as { create: never }).create);
 
-    if (!existingUseCase) {
-      return null;
-    }
-
-    if (existingUseCase.projectId !== useCase.projectId) {
-      throw new Error(
-        `UseCase with id ${useCase.id} does not belong to the specified project`
-      );
-    }
-
-    if (existingUseCase.creatorId !== useCase.creatorId) {
-      throw new Error(
-        `UseCase with id ${useCase.id} does not belong to the specified user`
-      );
-    }
-
+    // Update the use case with all the relations needed.
     const updatedUseCase = await tx.useCase.update({
       where: { id: useCase.id },
       data: {
-        slug: await generateSlug(
-          useCase.name,
-          useCase.id,
-          existingUseCase.publicId
-        ),
+        slug: generateSlug(useCase.name, useCase.id, existingUseCase.publicId),
         name: useCase.name,
         description: useCase.description,
         trigger: useCase.trigger,
         priority: useCase.priority,
-        freqUse: useCase.freqUse ? useCase.freqUse : '',
+        freqUse: useCase.freqUse || '',
         otherInfo: useCase.otherInfo?.length ? useCase.otherInfo : [],
         assumptions: useCase.assumptions?.length ? useCase.assumptions : [],
         conditions: {
@@ -540,9 +557,11 @@ export async function updateUseCase(
           deleteMany: { useCaseId: useCase.id },
           create: verifiedData.flowsData,
         },
-        primaryActor: verifiedData.primaryActorOp,
+        primaryActorId: primaryActorId,
         secondaryActors: {
           set: [],
+          connect: secondaryActorsConnect,
+          create: secondaryActorsCreate,
         },
         businessRules: {
           set: [],
@@ -553,6 +572,7 @@ export async function updateUseCase(
       include: {
         conditions: true,
         flows: { include: { steps: { include: { refs: true } } } },
+        primaryActor: true,
         secondaryActors: true,
         businessRules: true,
       },

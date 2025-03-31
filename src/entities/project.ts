@@ -32,7 +32,7 @@ export const NewProjectSchema = z.object({
       `Username must be at most ${maxProjectNameLength} letters`
     ),
   description: z.string().optional().nullable(),
-  ownerId: z.number().optional().nullable(),
+  ownerId: z.number().positive('Owner ID must be a positive number').optional(),
 });
 
 /**

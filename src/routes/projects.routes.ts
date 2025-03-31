@@ -149,7 +149,7 @@ export const projectApp = new Hono<{ Variables: Variables }>()
     jwt({ secret: environment.jwtSecret }),
     parseParamId('userId'),
     parseParamId('projectId'),
-    verifyProjectOwnership,
+    verifyProjectOwnership(false),
     async c => {
       try {
         let updatedProjectInfo: unknown;
@@ -190,7 +190,7 @@ export const projectApp = new Hono<{ Variables: Variables }>()
     jwt({ secret: environment.jwtSecret }),
     parseParamId('userId'),
     parseParamId('projectId'),
-    verifyProjectOwnership,
+    verifyProjectOwnership(false),
     async c => {
       try {
         await deleteProject(c.get('projectId'));

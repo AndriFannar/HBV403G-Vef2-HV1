@@ -103,7 +103,10 @@ export async function getFlowById(id: number): Promise<Flow | null> {
 
 /**
  * Creates a new flow.
+ * @requires The useCaseId must be set inside the flow object.
  * @param flow - The new flow to create.
+ * @throws Error if a Normal flow already exists for the use case.
+ * @throws Error if the useCaseId is not set inside the flow object.
  * @returns - The created flow.
  */
 export async function createFlow(flow: NewFlow): Promise<Flow> {

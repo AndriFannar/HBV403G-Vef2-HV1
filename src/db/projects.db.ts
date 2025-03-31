@@ -193,7 +193,9 @@ export async function getProjectById(id: number): Promise<Project | null> {
 
 /**
  * Creates a new project.
+ * @requires ownerId to be set in the project object.
  * @param project - The new project to create.
+ * @throws Error if the project does not have an ownerId.
  * @returns - The created project.
  */
 export async function createProject(project: NewProject): Promise<BaseProject> {
