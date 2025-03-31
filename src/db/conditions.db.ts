@@ -84,7 +84,15 @@ export async function createCondition(
   condition: NewCondition
 ): Promise<Condition> {
   return await prisma.$transaction(async tx => {
-    const publicId = await generateConditionPublicId(tx, condition);
+    if (!condition.useCaseId) {
+      throw new Error('Use case ID is required');
+    }
+
+    const publicId = await generateConditionPublicId(
+      tx,
+      condition,
+      condition.useCaseId
+    );
 
     const createdCondition = await tx.condition.create({
       data: {

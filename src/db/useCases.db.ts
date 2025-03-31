@@ -18,6 +18,7 @@ import {
   generateBusinessRulePublicId,
 } from './publicIdGenerators.js';
 import type { NewActor } from '../entities/actor.js';
+import { use } from 'hono/jsx';
 
 const MAX_RANDINT = 281474976710655;
 const DEF_NUM_FULL_USECASES = 5;
@@ -346,7 +347,8 @@ async function verifyNestedRelations(
     conditionsData,
     flowsData,
     primaryActorOp,
-    secondaryActorsOp,
+    connectSecondaryOps,
+    createSecondaryOps,
     businessRulesConnect,
     businessRulesCreate,
   };
@@ -365,6 +367,35 @@ export async function createUseCase(useCase: NewUseCase): Promise<UseCase> {
       throw new Error('Creator ID is required');
     }
 
+    // TODO: Rework this to use a more efficient way to check for existing actors / use some existing method
+    let primaryActorId;
+    if (!useCase.primaryActor.id) {
+      const actor = await tx.actor.create({
+        data: {
+          name: useCase.primaryActor.name,
+          description: useCase.primaryActor.description,
+          project: { connect: { id: useCase.projectId } },
+        },
+      });
+      primaryActorId = actor.id;
+    } else {
+      const existingActor = await tx.actor.findUnique({
+        where: { id: useCase.primaryActor.id },
+        select: { projectId: true },
+      });
+      if (!existingActor) {
+        throw new Error(
+          `Primary actor with id ${useCase.primaryActor.id} not found`
+        );
+      }
+      if (existingActor.projectId !== useCase.projectId) {
+        throw new Error(
+          `Primary actor with id ${useCase.primaryActor.id} does not belong to the specified project`
+        );
+      }
+      primaryActorId = useCase.primaryActor.id;
+    }
+
     const createdUseCase = await tx.useCase.create({
       data: {
         projectId: useCase.projectId,
@@ -373,6 +404,7 @@ export async function createUseCase(useCase: NewUseCase): Promise<UseCase> {
         name: useCase.name,
         creatorId: useCase.creatorId,
         description: useCase.description,
+        primaryActorId: primaryActorId,
         trigger: useCase.trigger,
         priority: useCase.priority,
         freqUse: useCase.freqUse ? useCase.freqUse : '',
@@ -412,8 +444,10 @@ export async function createUseCase(useCase: NewUseCase): Promise<UseCase> {
       },
       data: {
         slug: newSlug,
-        primaryActor: verifiedData.primaryActorOp,
-        secondaryActors: { verifiedData.secondaryActorsOp },
+        secondaryActors: {
+          connect: verifiedData.connectSecondaryOps,
+          create: verifiedData.createSecondaryOps,
+        },
         conditions: {
           create: verifiedData.conditionsData,
         },
@@ -506,10 +540,9 @@ export async function updateUseCase(
           deleteMany: { useCaseId: useCase.id },
           create: verifiedData.flowsData,
         },
+        primaryActor: verifiedData.primaryActorOp,
         secondaryActors: {
           set: [],
-          connect: verifiedData.actorsConnect,
-          create: verifiedData.actorsCreate,
         },
         businessRules: {
           set: [],

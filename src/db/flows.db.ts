@@ -120,7 +120,11 @@ export async function createFlow(flow: NewFlow): Promise<Flow> {
       }
     }
 
-    const publicId = await generateFlowPublicId(tx, flow);
+    if (!flow.useCaseId) {
+      throw new Error('Use case ID is required');
+    }
+
+    const publicId = await generateFlowPublicId(tx, flow, flow.useCaseId);
 
     const createdFlow = await tx.flow.create({
       data: {
