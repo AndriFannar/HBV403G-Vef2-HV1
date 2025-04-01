@@ -13,6 +13,8 @@
     "@hono/node-server": "^1.13.8",
     "@prisma/client": "^6.5.0",
     "bcrypt": "^5.1.1",
+    "cloudinary": "^2.6.0",
+    "file-type": "^20.4.1",
     "hono": "^4.7.2",
     "http-status-codes": "^2.3.0",
     "xss": "^1.0.15",

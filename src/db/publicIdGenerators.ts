@@ -27,7 +27,8 @@ import {
  */
 export async function generateConditionPublicId(
   tx: Prisma.TransactionClient,
-  condition: NewCondition
+  condition: NewCondition,
+  useCaseId: number
 ): Promise<string> {
   const conditionType =
     condition.conditionType === ConditionType.PRECONDITION
@@ -38,7 +39,7 @@ export async function generateConditionPublicId(
     where: {
       // eslint-disable-next-line camelcase
       useCaseId_entityType: {
-        useCaseId: condition.useCaseId,
+        useCaseId: useCaseId,
         entityType: conditionType,
       },
     },
@@ -69,7 +70,8 @@ export async function generateConditionPublicId(
  */
 export async function generateFlowPublicId(
   tx: Prisma.TransactionClient,
-  flow: NewFlow
+  flow: NewFlow,
+  useCaseId: number
 ): Promise<string> {
   if (flow.flowType !== FlowType.NORMAL) {
     const sequenceType =
@@ -81,7 +83,7 @@ export async function generateFlowPublicId(
       where: {
         // eslint-disable-next-line camelcase
         useCaseId_entityType: {
-          useCaseId: flow.useCaseId,
+          useCaseId: useCaseId,
           entityType: sequenceType,
         },
       },
@@ -101,8 +103,10 @@ export async function generateFlowPublicId(
     });
 
     if (flow.flowType === FlowType.ALTERNATE) {
+      // Alternate Flow
       return `${useCaseSequence.useCase.publicId}.${newCount}`;
     } else {
+      // Exception Flow
       if (!flow.forFlowId) {
         throw new Error('forFlowId is required for exception flows');
       }
@@ -117,8 +121,9 @@ export async function generateFlowPublicId(
       return `${parentFlow.publicId}.E${newCount}`;
     }
   } else {
+    // Normal Flow
     const useCase = await tx.useCase.findUnique({
-      where: { id: flow.useCaseId },
+      where: { id: useCaseId },
       select: { publicId: true },
     });
     if (!useCase) throw new Error('UseCase not found');
@@ -134,13 +139,14 @@ export async function generateFlowPublicId(
  */
 export async function generateBusinessRulePublicId(
   tx: Prisma.TransactionClient,
-  businessRule: NewBusinessRule
+  businessRule: NewBusinessRule,
+  projectId: number
 ): Promise<string> {
   const projectSequence = await tx.projectSequence.findUnique({
     where: {
       // eslint-disable-next-line camelcase
       projectId_entityType: {
-        projectId: businessRule.projectId,
+        projectId: projectId,
         entityType: ProjectCounterType.BUSINESSRULE,
       },
     },
@@ -151,7 +157,7 @@ export async function generateBusinessRulePublicId(
   }
 
   const newCount = projectSequence.count + 1;
-  await tx.useCaseSequence.update({
+  await tx.projectSequence.update({
     where: { id: projectSequence.id },
     data: { count: newCount },
   });
@@ -184,7 +190,7 @@ export async function generateUseCasePublicId(
   }
 
   const newCount = projectSequence.count + 1;
-  await tx.useCaseSequence.update({
+  await tx.projectSequence.update({
     where: { id: projectSequence.id },
     data: { count: newCount },
   });

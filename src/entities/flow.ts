@@ -18,7 +18,7 @@ import { z } from 'zod';
 export const BaseFlowSchema = z.object({
   name: z.string().min(1, 'Flow name is required'),
   flowType: z.nativeEnum(FlowType),
-  useCaseId: z.number().positive('Use case ID must be positive'),
+  useCaseId: z.number().positive('Use case ID must be positive').optional(),
   forFlowId: z.number().optional().nullable(),
 });
 
@@ -34,6 +34,7 @@ export const NewFlowSchema = BaseFlowSchema.extend({
  */
 export const FlowSchema = NewFlowSchema.extend({
   id: z.number().positive('ID must be a positive number'),
+  useCaseId: z.number().positive('Use case ID must be positive'),
   stepCount: z.number().default(0),
 }).merge(Referencible);
 

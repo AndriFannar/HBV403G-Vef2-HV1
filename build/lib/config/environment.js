@@ -3,7 +3,7 @@
  * @description Environment configuration module. Validates and returns the environment variables. Made from https://github.com/vefforritun/vef2-2025-v2-synilausn/blob/main/src/lib/environment.js
  * @author Ólafur Sverrir Kjartansson
  * @author Andri Fannar Kristjánsson
- * @version 1.0.0
+ * @version 1.1.0
  * @date February 25, 2025
  */
 const DEFAULT_PORT = 3000;
@@ -18,7 +18,7 @@ export function getEnvironment(env, logger) {
     if (parsedEnvironment) {
         return parsedEnvironment;
     }
-    const { PORT: port, DATABASE_URL: databaseUrl, JWT_SECRET: jwtSecret } = env;
+    const { PORT: port, DATABASE_URL: databaseUrl, JWT_SECRET: jwtSecret, CLOUDINARY_SECRET: cloudinarySecret, } = env;
     let error = false;
     if (!databaseUrl || databaseUrl.length === 0) {
         logger.error('DATABASE_URL must be defined as a string');
@@ -41,10 +41,16 @@ export function getEnvironment(env, logger) {
             return null;
         }
     }
+    if (!cloudinarySecret || cloudinarySecret.length === 0) {
+        if (error) {
+            return null;
+        }
+    }
     parsedEnvironment = {
         port: usedPort,
         databaseUrl: databaseUrl,
         jwtSecret: jwtSecret,
+        cloudinarySecret: cloudinarySecret,
     };
     return parsedEnvironment;
 }

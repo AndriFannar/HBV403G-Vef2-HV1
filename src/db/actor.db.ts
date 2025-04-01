@@ -101,10 +101,16 @@ export async function getActorById(id: number): Promise<BaseActor | null> {
 
 /**
  * Creates a new actor.
+ * @requires - The projectId is required to be set inside the actor entity.
  * @param actor - The new actor to create.
+ * @throws - An error if the projectId is not set.
  * @returns - The created actor.
  */
 export async function createActor(actor: NewActor): Promise<BaseActor> {
+  if (!actor.projectId) {
+    throw new Error('Project ID is required to create an actor.');
+  }
+
   const createdActor = await prisma.actor.create({
     data: {
       name: actor.name,

@@ -14,13 +14,26 @@ import { NewActorSchema } from './actor.js';
 import { SlugSchema } from './slug.js';
 import { z } from 'zod';
 
+const minProjectNameLength = 2;
+const maxProjectNameLength = 32;
+
 /**
  * A schema for validating a new project.
  */
 export const NewProjectSchema = z.object({
-  name: z.string().nonempty(),
+  name: z
+    .string()
+    .min(
+      minProjectNameLength,
+      `Username must be at least ${minProjectNameLength} letters`
+    )
+    .max(
+      maxProjectNameLength,
+      `Username must be at most ${maxProjectNameLength} letters`
+    ),
   description: z.string().optional().nullable(),
-  ownerId: z.number(),
+  ownerId: z.number().positive('Owner ID must be a positive number').optional(),
+  imageUrl: z.string().optional().nullable(),
 });
 
 /**
@@ -28,7 +41,7 @@ export const NewProjectSchema = z.object({
  */
 export const BaseProjectSchema = NewProjectSchema.extend({
   id: z.number().positive('ID must be a positive number'),
-  slug: SlugSchema,
+  slug: SlugSchema.optional().nullable(),
 });
 
 /**

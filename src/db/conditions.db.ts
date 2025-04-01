@@ -77,14 +77,24 @@ export async function getConditionById(id: number): Promise<Condition | null> {
 
 /**
  * Creates a new condition.
+ * @requires The condition object must have a useCaseId set.
  * @param condition - The new condition to create.
- * @returns - The created condition.
+ * @throws Will throw an error if useCaseId is not present.
+ * @returns The created condition.
  */
 export async function createCondition(
   condition: NewCondition
 ): Promise<Condition> {
   return await prisma.$transaction(async tx => {
-    const publicId = await generateConditionPublicId(tx, condition);
+    if (!condition.useCaseId) {
+      throw new Error('Use case ID is required');
+    }
+
+    const publicId = await generateConditionPublicId(
+      tx,
+      condition,
+      condition.useCaseId
+    );
 
     const createdCondition = await tx.condition.create({
       data: {

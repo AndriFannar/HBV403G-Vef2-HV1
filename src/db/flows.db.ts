@@ -103,7 +103,10 @@ export async function getFlowById(id: number): Promise<Flow | null> {
 
 /**
  * Creates a new flow.
+ * @requires The useCaseId must be set inside the flow object.
  * @param flow - The new flow to create.
+ * @throws Error if a Normal flow already exists for the use case.
+ * @throws Error if the useCaseId is not set inside the flow object.
  * @returns - The created flow.
  */
 export async function createFlow(flow: NewFlow): Promise<Flow> {
@@ -120,7 +123,11 @@ export async function createFlow(flow: NewFlow): Promise<Flow> {
       }
     }
 
-    const publicId = await generateFlowPublicId(tx, flow);
+    if (!flow.useCaseId) {
+      throw new Error('Use case ID is required');
+    }
+
+    const publicId = await generateFlowPublicId(tx, flow, flow.useCaseId);
 
     const createdFlow = await tx.flow.create({
       data: {

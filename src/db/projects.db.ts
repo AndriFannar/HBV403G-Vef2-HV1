@@ -9,7 +9,7 @@
 
 import type { NewProject, BaseProject, Project } from '../entities/project.js';
 import { generateSlug } from '../lib/slugUtils.js';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, ProjectCounterType } from '@prisma/client';
 import { randomInt } from 'crypto';
 
 const MAX_RANDINT = 281474976710655;
@@ -43,7 +43,7 @@ export async function getAllProjects(
  * @param offset - The number of projects to skip.
  * @returns - The projects for the user ID, if they exist. Otherwise, returns an empty array.
  */
-export async function getUseCasesSummaryByUserId(
+export async function getProjectSummaryByUserId(
   userId: number,
   limit: number = DEF_NUM_PROJECTS,
   offset: number = 0
@@ -88,6 +88,7 @@ export async function getProjectsByUserId(
             },
           },
           businessRules: true,
+          primaryActor: true,
           secondaryActors: true,
           useCaseSequences: true,
         },
@@ -124,6 +125,7 @@ export async function getProjectBySlug(slug: string): Promise<Project | null> {
             },
           },
           businessRules: true,
+          primaryActor: true,
           secondaryActors: true,
           useCaseSequences: true,
         },
@@ -131,6 +133,22 @@ export async function getProjectBySlug(slug: string): Promise<Project | null> {
       actors: true,
       businessRules: true,
       projectSequences: true,
+    },
+  });
+  return project ?? null;
+}
+
+/**
+ * Gets a project summary (without relations) by ID.
+ * @param id - The ID of the project to fetch.
+ * @returns - The project corresponding to given ID, if it exists. Otherwise, returns null.
+ */
+export async function getProjectSummaryById(
+  id: number
+): Promise<BaseProject | null> {
+  const project = await prisma.project.findFirst({
+    where: {
+      id: id,
     },
   });
   return project ?? null;
@@ -160,6 +178,7 @@ export async function getProjectById(id: number): Promise<Project | null> {
             },
           },
           businessRules: true,
+          primaryActor: true,
           secondaryActors: true,
           useCaseSequences: true,
         },
@@ -174,29 +193,44 @@ export async function getProjectById(id: number): Promise<Project | null> {
 
 /**
  * Creates a new project.
+ * @requires ownerId to be set in the project object.
  * @param project - The new project to create.
+ * @throws Error if the project does not have an ownerId.
  * @returns - The created project.
  */
-export async function createFlow(project: NewProject): Promise<BaseProject> {
-  let createdProject = await prisma.project.create({
-    data: {
-      name: project.name,
-      description: project.description,
-      ownerId: project.ownerId,
-      slug: randomInt(MAX_RANDINT).toString(),
-    },
+export async function createProject(project: NewProject): Promise<BaseProject> {
+  return await prisma.$transaction(async tx => {
+    if (!project.ownerId) {
+      throw new Error('Project must have an owner ID');
+    }
+
+    let createdProject = await tx.project.create({
+      data: {
+        name: project.name,
+        description: project.description,
+        ownerId: project.ownerId,
+        slug: randomInt(MAX_RANDINT).toString(),
+        imageUrl: project.imageUrl,
+        projectSequences: {
+          create: [
+            { entityType: ProjectCounterType.USECASE, count: 0 },
+            { entityType: ProjectCounterType.BUSINESSRULE, count: 0 },
+          ],
+        },
+      },
+    });
+
+    const newSlug = generateSlug(createdProject.name, createdProject.id);
+
+    createdProject = await tx.project.update({
+      where: { id: createdProject.id },
+      data: {
+        slug: newSlug,
+      },
+    });
+
+    return createdProject;
   });
-
-  const newSlug = generateSlug(createdProject.name, createdProject.id);
-
-  createdProject = await prisma.project.update({
-    where: { id: createdProject.id },
-    data: {
-      slug: newSlug,
-    },
-  });
-
-  return createdProject;
 }
 
 /**
@@ -213,6 +247,7 @@ export async function updateProject(
       name: project.name,
       description: project.description,
       slug: generateSlug(project.name, project.id),
+      imageUrl: project.imageUrl,
     },
   });
 

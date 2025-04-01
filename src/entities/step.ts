@@ -16,7 +16,7 @@ import { z } from 'zod';
  */
 export const BaseStepSchema = z.object({
   step: z.string().nonempty(),
-  flowId: z.number().positive('Flow ID must be positive'),
+  flowId: z.number().positive('Flow ID must be positive').optional(),
 });
 
 /**
@@ -31,6 +31,7 @@ export const NewStepSchema = BaseStepSchema.extend({
  */
 export const StepSchema = NewStepSchema.extend({
   id: z.number().positive('ID must be a positive number'),
+  flowId: z.number().positive('Flow ID must be positive'),
 }).merge(Referencible);
 
 export type BaseStep = z.infer<typeof BaseStepSchema>;
