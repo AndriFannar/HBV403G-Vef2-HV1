@@ -13,6 +13,8 @@ import type { UseCase } from './useCase.js';
 import type { Actor } from './actor.js';
 
 export type Variables = {
+  limit: number;
+  offset: number;
   projectId: number;
   userId: number;
   actorId: number;

@@ -8,7 +8,6 @@
  */
 
 import { verifyProjectOwnership } from '../middleware/ownershipVerificationMiddleware.js';
-import { parseParamId } from '../middleware/utilMiddleware.js';
 import { getEnvironment } from '../lib/config/environment.js';
 import type { Variables } from '../entities/context.js';
 import { Hono, type Context, type Next } from 'hono';
@@ -22,6 +21,10 @@ import {
   getBusinessRuleById,
   getBusinessRulesByProjectId,
 } from '../db/businessRules.db.js';
+import {
+  parseParamId,
+  processLimitOffset,
+} from '../middleware/utilMiddleware.js';
 import {
   validateAndSanitizeNewBusinessRule,
   validateAndSanitizeBaseBusinessRule,
@@ -64,7 +67,7 @@ const fetchAndVerifyBusinessRule = async (c: Context, next: Next) => {
 export const businessRuleApp = new Hono<{ Variables: Variables }>()
 
   /**
-   * @description Get actors by project ID
+   * @description Get business rules by project ID
    */
   .get(
     '/',
@@ -72,14 +75,12 @@ export const businessRuleApp = new Hono<{ Variables: Variables }>()
     parseParamId('userId'),
     parseParamId('projectId'),
     verifyProjectOwnership(false),
+    processLimitOffset,
     async c => {
       try {
         const project = c.get('project');
-        const limitStr = c.req.query('limit');
-        const offsetStr = c.req.query('offset');
-
-        const limit = limitStr ? parseInt(limitStr, 10) : undefined;
-        const offset = offsetStr ? parseInt(offsetStr, 10) : undefined;
+        const limit = c.get('limit');
+        const offset = c.get('offset');
 
         const businessRules = await getBusinessRulesByProjectId(
           project.id,

@@ -9,15 +9,18 @@
 
 import { validateAndSanitizeBaseUser } from '../lib/validation/userValidator.js';
 import { createUser, getUserByUsername } from '../db/users.db.js';
+import { getUseCasesSummaryByUserId } from '../db/useCases.db.js';
 import { getEnvironment } from '../lib/config/environment.js';
+import type { Variables } from '../entities/context.js';
 import { StatusCodes } from 'http-status-codes';
 import { logger } from '../lib/io/logger.js';
 import { jwt, sign } from 'hono/jwt';
 import { Hono } from 'hono';
 import bcrypt from 'bcrypt';
-import { parseParamId } from '../middleware/utilMiddleware.js';
-import { getUseCasesSummaryByUserId } from '../db/useCases.db.js';
-import type { Variables } from '../entities/context.js';
+import {
+  parseParamId,
+  processLimitOffset,
+} from '../middleware/utilMiddleware.js';
 
 const environment = getEnvironment(process.env, logger);
 
@@ -119,14 +122,12 @@ export const userApp = new Hono<{ Variables: Variables }>()
     '/:userId/useCases/summary',
     jwt({ secret: environment.jwtSecret }),
     parseParamId('userId'),
+    processLimitOffset,
     async c => {
       try {
         const userId = c.get('userId');
-        const limitStr = c.req.query('limit');
-        const offsetStr = c.req.query('offset');
-
-        const limit = limitStr ? parseInt(limitStr, 10) : undefined;
-        const offset = offsetStr ? parseInt(offsetStr, 10) : undefined;
+        const limit = c.get('limit');
+        const offset = c.get('offset');
 
         const useCases = await getUseCasesSummaryByUserId(
           userId,

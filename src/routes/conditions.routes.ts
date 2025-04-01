@@ -7,6 +7,7 @@
  * @dependencies
  */
 
+import type { Variables } from '../entities/context.js';
 import { Hono } from 'hono';
 
-export const conditionApp = new Hono();
+export const conditionApp = new Hono<{ Variables: Variables }>();

@@ -8,7 +8,6 @@
  */
 
 import { verifyProjectOwnership } from '../middleware/ownershipVerificationMiddleware.js';
-import { parseParamId } from '../middleware/utilMiddleware.js';
 import { getEnvironment } from '../lib/config/environment.js';
 import type { Variables } from '../entities/context.js';
 import { StatusCodes } from 'http-status-codes';
@@ -21,6 +20,10 @@ import {
   deleteProject,
   getProjectSummaryByUserId,
 } from '../db/projects.db.js';
+import {
+  parseParamId,
+  processLimitOffset,
+} from '../middleware/utilMiddleware.js';
 import {
   validateAndSanitizeNewProject,
   validateAndSanitizeBaseProject,
@@ -40,6 +43,7 @@ export const projectApp = new Hono<{ Variables: Variables }>()
     '/summary',
     jwt({ secret: environment.jwtSecret }),
     parseParamId('userId'),
+    processLimitOffset,
     async c => {
       try {
         const userId = c.get('userId');
@@ -48,11 +52,8 @@ export const projectApp = new Hono<{ Variables: Variables }>()
           return c.json({ message: 'Unauthorized' }, StatusCodes.FORBIDDEN);
         }
 
-        const limitStr = c.req.query('limit');
-        const offsetStr = c.req.query('offset');
-
-        const limit = limitStr ? parseInt(limitStr, 10) : undefined;
-        const offset = offsetStr ? parseInt(offsetStr, 10) : undefined;
+        const limit = c.get('limit');
+        const offset = c.get('offset');
 
         const projects = await getProjectSummaryByUserId(userId, limit, offset);
 

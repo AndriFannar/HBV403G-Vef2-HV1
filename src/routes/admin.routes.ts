@@ -7,9 +7,11 @@
  * @dependencies adminMiddleware, config/environment, db/businessRules.db, db/projects.db, db/actor.db, db/users.db, lib/io/logger, hono/jwt, hono
  */
 
+import { processLimitOffset } from '../middleware/utilMiddleware.js';
 import { adminMiddleware } from '../middleware/adminMiddleware.js';
 import { getAllBusinessRules } from '../db/businessRules.db.js';
 import { getEnvironment } from '../lib/config/environment.js';
+import type { Variables } from '../entities/context.js';
 import { getAllProjects } from '../db/projects.db.js';
 import { getAllUseCases } from '../db/useCases.db.js';
 import { getAllActors } from '../db/actor.db.js';
@@ -24,7 +26,7 @@ if (!environment) {
   process.exit(1);
 }
 
-export const adminApp = new Hono()
+export const adminApp = new Hono<{ Variables: Variables }>()
 
   /**
    * @description Get all users
@@ -33,10 +35,19 @@ export const adminApp = new Hono()
     '/users',
     jwt({ secret: environment.jwtSecret }),
     adminMiddleware,
+    processLimitOffset,
     async c => {
       try {
-        const users = await getAllUsers();
-        return c.json(users);
+        const limit = c.get('limit');
+        const offset = c.get('offset');
+        const users = await getAllUsers(limit, offset);
+        return c.json({
+          data: users,
+          pagination: {
+            limit: limit || 'default',
+            offset: offset || 'default',
+          },
+        });
       } catch (e) {
         logger.error('Failed to get Users:', e);
         throw e;
@@ -51,10 +62,19 @@ export const adminApp = new Hono()
     '/projects',
     jwt({ secret: environment.jwtSecret }),
     adminMiddleware,
+    processLimitOffset,
     async c => {
       try {
-        const projects = await getAllProjects();
-        return c.json(projects);
+        const limit = c.get('limit');
+        const offset = c.get('offset');
+        const projects = await getAllProjects(limit, offset);
+        return c.json({
+          data: projects,
+          pagination: {
+            limit: limit || 'default',
+            offset: offset || 'default',
+          },
+        });
       } catch (e) {
         logger.error('Failed to get Projects:', e);
         throw e;
@@ -69,10 +89,19 @@ export const adminApp = new Hono()
     '/actors',
     jwt({ secret: environment.jwtSecret }),
     adminMiddleware,
+    processLimitOffset,
     async c => {
       try {
-        const actors = await getAllActors();
-        return c.json(actors);
+        const limit = c.get('limit');
+        const offset = c.get('offset');
+        const actors = await getAllActors(limit, offset);
+        return c.json({
+          data: actors,
+          pagination: {
+            limit: limit || 'default',
+            offset: offset || 'default',
+          },
+        });
       } catch (e) {
         logger.error('Failed to get Actors:', e);
         throw e;
@@ -87,10 +116,19 @@ export const adminApp = new Hono()
     '/businessRules',
     jwt({ secret: environment.jwtSecret }),
     adminMiddleware,
+    processLimitOffset,
     async c => {
       try {
-        const businessRules = await getAllBusinessRules();
-        return c.json(businessRules);
+        const limit = c.get('limit');
+        const offset = c.get('offset');
+        const businessRules = await getAllBusinessRules(limit, offset);
+        return c.json({
+          data: businessRules,
+          pagination: {
+            limit: limit || 'default',
+            offset: offset || 'default',
+          },
+        });
       } catch (e) {
         logger.error('Failed to get Business Rules:', e);
         throw e;
@@ -105,10 +143,19 @@ export const adminApp = new Hono()
     '/useCases',
     jwt({ secret: environment.jwtSecret }),
     adminMiddleware,
+    processLimitOffset,
     async c => {
       try {
-        const useCases = await getAllUseCases();
-        return c.json(useCases);
+        const limit = c.get('limit');
+        const offset = c.get('offset');
+        const useCases = await getAllUseCases(limit, offset);
+        return c.json({
+          data: useCases,
+          pagination: {
+            limit: limit || 'default',
+            offset: offset || 'default',
+          },
+        });
       } catch (e) {
         logger.error('Failed to get Use Cases:', e);
         throw e;

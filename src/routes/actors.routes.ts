@@ -8,7 +8,6 @@
  */
 
 import { verifyProjectOwnership } from '../middleware/ownershipVerificationMiddleware.js';
-import { parseParamId } from '../middleware/utilMiddleware.js';
 import { getEnvironment } from '../lib/config/environment.js';
 import type { Variables } from '../entities/context.js';
 import { Hono, type Context, type Next } from 'hono';
@@ -22,6 +21,10 @@ import {
   getActorById,
   getActorsByProjectId,
 } from '../db/actor.db.js';
+import {
+  parseParamId,
+  processLimitOffset,
+} from '../middleware/utilMiddleware.js';
 import {
   validateAndSanitizeBaseActor,
   validateAndSanitizeNewActor,
@@ -72,14 +75,12 @@ export const actorApp = new Hono<{ Variables: Variables }>()
     parseParamId('userId'),
     parseParamId('projectId'),
     verifyProjectOwnership(false),
+    processLimitOffset,
     async c => {
       try {
         const project = c.get('project');
-        const limitStr = c.req.query('limit');
-        const offsetStr = c.req.query('offset');
-
-        const limit = limitStr ? parseInt(limitStr, 10) : undefined;
-        const offset = offsetStr ? parseInt(offsetStr, 10) : undefined;
+        const limit = c.get('limit');
+        const offset = c.get('offset');
 
         const actors = await getActorsByProjectId(project.id, limit, offset);
 

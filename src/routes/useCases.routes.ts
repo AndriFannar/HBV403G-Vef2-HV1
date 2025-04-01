@@ -8,7 +8,6 @@
  */
 
 import { validateAndSanitizeNewUseCase } from '../lib/validation/useCaseValidator.js';
-import { parseParamId } from '../middleware/utilMiddleware.js';
 import { getEnvironment } from '../lib/config/environment.js';
 import type { Variables } from '../entities/context.js';
 import { StatusCodes } from 'http-status-codes';
@@ -21,6 +20,10 @@ import {
   deleteUseCase,
   getUseCasesSummaryByProjectId,
 } from '../db/useCases.db.js';
+import {
+  parseParamId,
+  processLimitOffset,
+} from '../middleware/utilMiddleware.js';
 import {
   verifyProjectOwnership,
   verifyUseCaseOwnership,
@@ -42,14 +45,12 @@ export const useCaseApp = new Hono<{ Variables: Variables }>()
     parseParamId('userId'),
     parseParamId('projectId'),
     verifyProjectOwnership(false),
+    processLimitOffset,
     async c => {
       try {
         const projectId = c.get('projectId');
-        const limitStr = c.req.query('limit');
-        const offsetStr = c.req.query('offset');
-
-        const limit = limitStr ? parseInt(limitStr, 10) : undefined;
-        const offset = offsetStr ? parseInt(offsetStr, 10) : undefined;
+        const limit = c.get('limit');
+        const offset = c.get('offset');
 
         const useCases = await getUseCasesSummaryByProjectId(
           projectId,

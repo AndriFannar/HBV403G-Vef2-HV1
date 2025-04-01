@@ -32,3 +32,19 @@ export const parseParamId =
     c.set(paramName, id);
     return next();
   };
+
+/**
+ * Processes the `limit` and `offset` query parameters from the request.
+ * @param c - The Hono context object.
+ * @param next - The next middleware function.
+ * @returns - A promise that resolves to the next middleware function.
+ */
+export const processLimitOffset = async (c: Context, next: Next) => {
+  const limitStr = c.req.query('limit');
+  const offsetStr = c.req.query('offset');
+
+  c.set('limit', limitStr ? parseInt(limitStr, 10) : undefined);
+  c.set('offset', offsetStr ? parseInt(offsetStr, 10) : undefined);
+
+  return next();
+};
