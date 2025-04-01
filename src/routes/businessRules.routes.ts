@@ -8,12 +8,12 @@
  */
 
 import { verifyProjectOwnership } from '../middleware/ownershipVerificationMiddleware.js';
+import { jwtMiddleware } from '../middleware/authMiddleware.js';
 import { getEnvironment } from '../lib/config/environment.js';
 import type { Variables } from '../entities/context.js';
 import { Hono, type Context, type Next } from 'hono';
 import { StatusCodes } from 'http-status-codes';
 import { logger } from '../lib/io/logger.js';
-import { jwt } from 'hono/jwt';
 import {
   createBusinessRule,
   updateBusinessRule,
@@ -71,7 +71,7 @@ export const businessRuleApp = new Hono<{ Variables: Variables }>()
    */
   .get(
     '/',
-    jwt({ secret: environment.jwtSecret }),
+    jwtMiddleware,
     parseParamId('userId'),
     parseParamId('projectId'),
     verifyProjectOwnership(false),
@@ -114,7 +114,7 @@ export const businessRuleApp = new Hono<{ Variables: Variables }>()
    */
   .get(
     '/:businessRuleId',
-    jwt({ secret: environment.jwtSecret }),
+    jwtMiddleware,
     parseParamId('userId'),
     parseParamId('projectId'),
     parseParamId('businessRuleId'),
@@ -137,7 +137,7 @@ export const businessRuleApp = new Hono<{ Variables: Variables }>()
    */
   .post(
     '/',
-    jwt({ secret: environment.jwtSecret }),
+    jwtMiddleware,
     parseParamId('userId'),
     parseParamId('projectId'),
     verifyProjectOwnership(false),
@@ -177,7 +177,7 @@ export const businessRuleApp = new Hono<{ Variables: Variables }>()
    */
   .patch(
     '/:businessRuleId',
-    jwt({ secret: environment.jwtSecret }),
+    jwtMiddleware,
     parseParamId('userId'),
     parseParamId('projectId'),
     parseParamId('businessRuleId'),
@@ -221,7 +221,7 @@ export const businessRuleApp = new Hono<{ Variables: Variables }>()
    */
   .delete(
     '/:businessRuleId',
-    jwt({ secret: environment.jwtSecret }),
+    jwtMiddleware,
     parseParamId('userId'),
     parseParamId('projectId'),
     parseParamId('businessRuleId'),

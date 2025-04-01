@@ -83,6 +83,7 @@ model Project {
   slug             String
   name             String
   description      String?
+  imageUrl         String?
   ownerId          Int
   owner            User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   useCases         UseCase[]

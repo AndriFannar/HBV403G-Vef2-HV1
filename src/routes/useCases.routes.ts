@@ -8,11 +8,11 @@
  */
 
 import { validateAndSanitizeNewUseCase } from '../lib/validation/useCaseValidator.js';
+import { jwtMiddleware } from '../middleware/authMiddleware.js';
 import { getEnvironment } from '../lib/config/environment.js';
 import type { Variables } from '../entities/context.js';
 import { StatusCodes } from 'http-status-codes';
 import { logger } from '../lib/io/logger.js';
-import { jwt } from 'hono/jwt';
 import { Hono } from 'hono';
 import {
   createUseCase,
@@ -41,7 +41,7 @@ export const useCaseApp = new Hono<{ Variables: Variables }>()
    */
   .get(
     '/summary',
-    jwt({ secret: environment.jwtSecret }),
+    jwtMiddleware,
     parseParamId('userId'),
     parseParamId('projectId'),
     verifyProjectOwnership(false),
@@ -84,7 +84,7 @@ export const useCaseApp = new Hono<{ Variables: Variables }>()
    */
   .get(
     '/:useCaseId',
-    jwt({ secret: environment.jwtSecret }),
+    jwtMiddleware,
     parseParamId('userId'),
     parseParamId('projectId'),
     parseParamId('useCaseId'),
@@ -108,7 +108,7 @@ export const useCaseApp = new Hono<{ Variables: Variables }>()
    */
   .post(
     '/',
-    jwt({ secret: environment.jwtSecret }),
+    jwtMiddleware,
     parseParamId('userId'),
     parseParamId('projectId'),
     verifyProjectOwnership(false),
@@ -148,7 +148,7 @@ export const useCaseApp = new Hono<{ Variables: Variables }>()
    */
   .patch(
     '/:useCaseId',
-    jwt({ secret: environment.jwtSecret }),
+    jwtMiddleware,
     parseParamId('userId'),
     parseParamId('projectId'),
     parseParamId('useCaseId'),
@@ -192,7 +192,7 @@ export const useCaseApp = new Hono<{ Variables: Variables }>()
    */
   .delete(
     '/:useCaseId',
-    jwt({ secret: environment.jwtSecret }),
+    jwtMiddleware,
     parseParamId('userId'),
     parseParamId('projectId'),
     parseParamId('useCaseId'),

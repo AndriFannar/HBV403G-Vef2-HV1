@@ -10,11 +10,12 @@
 import { validateAndSanitizeBaseUser } from '../lib/validation/userValidator.js';
 import { createUser, getUserByUsername } from '../db/users.db.js';
 import { getUseCasesSummaryByUserId } from '../db/useCases.db.js';
+import { jwtMiddleware } from '../middleware/authMiddleware.js';
 import { getEnvironment } from '../lib/config/environment.js';
 import type { Variables } from '../entities/context.js';
 import { StatusCodes } from 'http-status-codes';
 import { logger } from '../lib/io/logger.js';
-import { jwt, sign } from 'hono/jwt';
+import { sign } from 'hono/jwt';
 import { Hono } from 'hono';
 import bcrypt from 'bcrypt';
 import {
@@ -120,7 +121,7 @@ export const userApp = new Hono<{ Variables: Variables }>()
    */
   .get(
     '/:userId/useCases/summary',
-    jwt({ secret: environment.jwtSecret }),
+    jwtMiddleware,
     parseParamId('userId'),
     processLimitOffset,
     async c => {

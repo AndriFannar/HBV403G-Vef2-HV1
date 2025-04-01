@@ -9,16 +9,15 @@
 
 import { businessRuleApp } from './routes/businessRules.routes.js';
 import { getEnvironment } from './lib/config/environment.js';
-import { conditionApp } from './routes/conditions.routes.js';
 import { projectApp } from './routes/projects.routes.js';
 import { useCaseApp } from './routes/useCases.routes.js';
 import { actorApp } from './routes/actors.routes.js';
 import { adminApp } from './routes/admin.routes.js';
-import { flowApp } from './routes/flows.routes.js';
 import { userApp } from './routes/users.routes.js';
 import { logger } from './lib/io/logger.js';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
+import { StatusCodes } from 'http-status-codes';
 
 const env = getEnvironment(process.env, logger);
 
@@ -26,21 +25,13 @@ if (!env) {
   process.exit(1);
 }
 
-const app = new Hono()
+export const app = new Hono()
   .route('/users', userApp)
   .route('/admin', adminApp)
   .route('/users/:userId/projects', projectApp)
   .route('/users/:userId/projects/:projectId/actors', actorApp)
   .route('/users/:userId/projects/:projectId/useCases', useCaseApp)
-  .route('/users/:userId/projects/:projectId/businessRules', businessRuleApp)
-  .route(
-    '/users/:userId/projects/:projectId/useCases/:useCaseId/flows',
-    flowApp
-  )
-  .route(
-    '/users/:userId/projects/:projectId/useCases/:useCaseId/conditions',
-    conditionApp
-  );
+  .route('/users/:userId/projects/:projectId/businessRules', businessRuleApp);
 
 app.get('/', c => {
   const routes = [
@@ -92,16 +83,38 @@ app.get('/', c => {
       method: 'GET',
       path: '/users/:userId/projects/:projectId/useCases/summary',
     },
+    {
+      method: 'GET',
+      path: '/users/:userId/projects/:projectId/useCases/:useCaseId',
+    },
+    {
+      method: 'POST',
+      path: '/users/:userId/projects/:projectId/useCases',
+    },
+    {
+      method: 'PATCH',
+      path: '/users/:userId/projects/:projectId/useCases/:useCaseId',
+    },
+    {
+      method: 'DELETE',
+      path: '/users/:userId/projects/:projectId/useCases/:useCaseId',
+    },
   ];
   return c.json(routes);
 });
 
-serve(
-  {
-    fetch: app.fetch,
-    port: env.port,
-  },
-  info => {
-    logger.info(`Server is running on port: ${info.port}`);
-  }
+app.all('*', c =>
+  c.json({ message: 'Endpoint not found' }, StatusCodes.NOT_FOUND)
 );
+
+if (process.env.NODE_ENV !== 'test') {
+  serve(
+    {
+      fetch: app.fetch,
+      port: env.port,
+    },
+    info => {
+      logger.info(`Server is running on port: ${info.port}`);
+    }
+  );
+}

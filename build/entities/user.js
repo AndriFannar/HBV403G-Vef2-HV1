@@ -1,21 +1,23 @@
 /**
  * @file user.ts
- * @description Contains the schema for a base (new) user and an existing user.
+ * @description Contains the schema for a ne) user, a base user, and an existing user.
  * @author Andri Fannar Kristjánsson
- * @version 1.0.0
+ * @version 1.1.0
  * @date March 04, 2025
- * @dependencies zod
+ * @dependencies zod, @prisma/client, ./useCase.js, ./project.js
  */
-import { Role } from '@prisma/client/wasm';
+import { NewUseCaseSchema } from './useCase.js';
+import { NewProjectSchema } from './project.js';
+import { Role } from '@prisma/client';
 import { z } from 'zod';
 const minUsernameLength = 2;
 const maxUsernameLength = 32;
 const minPasswordLength = 6;
 const maxPasswordLength = 64;
 /**
- * A schema for validating a base (new) user.
+ * A schema for validating a new user.
  */
-export const BaseUserSchema = z.object({
+export const NewUserSchema = z.object({
     username: z
         .string()
         .min(minUsernameLength, `Username must be at least ${minUsernameLength} letters`)
@@ -26,9 +28,16 @@ export const BaseUserSchema = z.object({
         .max(maxPasswordLength, `Password must be at most ${maxPasswordLength} letters`),
 });
 /**
+ * A schema for validating a base user.
+ */
+export const BaseUserSchema = NewUserSchema.extend({
+    id: z.number().positive('User ID must be positive'),
+    role: z.nativeEnum(Role),
+});
+/**
  * A schema for validating a user.
  */
 export const UserSchema = BaseUserSchema.extend({
-    id: z.number(),
-    role: z.nativeEnum(Role),
+    projects: z.array(NewProjectSchema).optional().default([]),
+    useCases: z.array(NewUseCaseSchema).optional().default([]),
 });

@@ -7,9 +7,9 @@
  * @dependencies validator.ts, slug.ts, zod, xss
  */
 import { Validator } from '../../entities/validator.js';
+import { sanitizeString } from './sanitizeString.js';
 import { SlugSchema } from '../../entities/slug.js';
 import { z } from 'zod';
-import xss from 'xss';
 /**
  * Validates and sanitizes a slug.
  * @param data - The slug to validate and sanitize.
@@ -20,6 +20,6 @@ export const validateAndSanitizeSlug = async (data) => {
     if (!parsed.success) {
         return { error: parsed.error.format() };
     }
-    const sanitizedData = xss(parsed.data.trim());
+    const sanitizedData = sanitizeString(parsed.data);
     return { data: sanitizedData };
 };

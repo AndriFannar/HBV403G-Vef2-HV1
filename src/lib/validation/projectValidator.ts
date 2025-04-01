@@ -39,6 +39,7 @@ export const validateAndSanitizeNewProject = async (
       ? sanitizeString(parsed.data.description)
       : '',
     ownerId: parsed.data.ownerId,
+    imageUrl: parsed.data.imageUrl ? sanitizeString(parsed.data.imageUrl) : '',
   };
 
   return { data: sanitizedData };

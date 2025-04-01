@@ -8,7 +8,6 @@
  */
 
 import { processLimitOffset } from '../middleware/utilMiddleware.js';
-import { adminMiddleware } from '../middleware/adminMiddleware.js';
 import { getAllBusinessRules } from '../db/businessRules.db.js';
 import { getEnvironment } from '../lib/config/environment.js';
 import type { Variables } from '../entities/context.js';
@@ -17,8 +16,11 @@ import { getAllUseCases } from '../db/useCases.db.js';
 import { getAllActors } from '../db/actor.db.js';
 import { getAllUsers } from '../db/users.db.js';
 import { logger } from '../lib/io/logger.js';
-import { jwt } from 'hono/jwt';
 import { Hono } from 'hono';
+import {
+  jwtMiddleware,
+  adminMiddleware,
+} from '../middleware/authMiddleware.js';
 
 const environment = getEnvironment(process.env, logger);
 
@@ -33,7 +35,7 @@ export const adminApp = new Hono<{ Variables: Variables }>()
    */
   .get(
     '/users',
-    jwt({ secret: environment.jwtSecret }),
+    jwtMiddleware,
     adminMiddleware,
     processLimitOffset,
     async c => {
@@ -60,7 +62,7 @@ export const adminApp = new Hono<{ Variables: Variables }>()
    */
   .get(
     '/projects',
-    jwt({ secret: environment.jwtSecret }),
+    jwtMiddleware,
     adminMiddleware,
     processLimitOffset,
     async c => {
@@ -87,7 +89,7 @@ export const adminApp = new Hono<{ Variables: Variables }>()
    */
   .get(
     '/actors',
-    jwt({ secret: environment.jwtSecret }),
+    jwtMiddleware,
     adminMiddleware,
     processLimitOffset,
     async c => {
@@ -114,7 +116,7 @@ export const adminApp = new Hono<{ Variables: Variables }>()
    */
   .get(
     '/businessRules',
-    jwt({ secret: environment.jwtSecret }),
+    jwtMiddleware,
     adminMiddleware,
     processLimitOffset,
     async c => {
@@ -141,7 +143,7 @@ export const adminApp = new Hono<{ Variables: Variables }>()
    */
   .get(
     '/useCases',
-    jwt({ secret: environment.jwtSecret }),
+    jwtMiddleware,
     adminMiddleware,
     processLimitOffset,
     async c => {

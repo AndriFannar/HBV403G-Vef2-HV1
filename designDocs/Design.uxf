@@ -9,12 +9,13 @@
 </panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>230</x><y>150</y><w>90</w><h>60</h></coordinates><panel_attributes>&lt;&lt;enum&gt;&gt; Role
 --
 USER
-ADMIN</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>210</x><y>200</y><w>80</w><h>50</h></coordinates><panel_attributes>lt=-</panel_attributes><additional_attributes>60;10;60;30;10;30</additional_attributes></element><element><id>UMLClass</id><coordinates><x>0</x><y>370</y><w>250</w><h>170</h></coordinates><panel_attributes>Project
+ADMIN</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>210</x><y>200</y><w>80</w><h>50</h></coordinates><panel_attributes>lt=-</panel_attributes><additional_attributes>60;10;60;30;10;30</additional_attributes></element><element><id>UMLClass</id><coordinates><x>0</x><y>370</y><w>250</w><h>180</h></coordinates><panel_attributes>Project
 --
 -id: Int
 -slug: String
 -name: String
 -description: String
+-imageUrl: String
 -owner: User
 -useCases: List&lt;UseCase&gt;
 -actors: List&lt;Actor&gt;
@@ -127,11 +128,11 @@ POSTCONDITION</panel_attributes><additional_attributes></additional_attributes><
 FLOW
 STEP
 CONDITION
-BUSINESSRULE</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>1000</x><y>380</y><w>30</w><h>60</h></coordinates><panel_attributes>lt=-</panel_attributes><additional_attributes>10;40;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>60</x><y>530</y><w>310</w><h>220</h></coordinates><panel_attributes>lt=&lt;-&gt;
+BUSINESSRULE</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>1000</x><y>380</y><w>30</w><h>60</h></coordinates><panel_attributes>lt=-</panel_attributes><additional_attributes>10;40;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>60</x><y>540</y><w>310</w><h>210</h></coordinates><panel_attributes>lt=&lt;-&gt;
 m1=0..*
-m2=1</panel_attributes><additional_attributes>290;190;10;190;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>80</x><y>530</y><w>70</w><h>100</h></coordinates><panel_attributes>lt=&lt;-&gt;
+m2=1</panel_attributes><additional_attributes>290;180;10;180;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>80</x><y>540</y><w>70</w><h>90</h></coordinates><panel_attributes>lt=&lt;-&gt;
 m1=0..*
-m2=1</panel_attributes><additional_attributes>50;70;10;70;10;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>730</x><y>200</y><w>160</w><h>120</h></coordinates><panel_attributes>Flow
+m2=1</panel_attributes><additional_attributes>50;60;10;60;10;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>730</x><y>200</y><w>160</w><h>120</h></coordinates><panel_attributes>Flow
 --
 -id: Int
 -publicId: String

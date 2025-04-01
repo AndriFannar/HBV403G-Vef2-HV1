@@ -33,6 +33,7 @@ export const NewProjectSchema = z.object({
     ),
   description: z.string().optional().nullable(),
   ownerId: z.number().positive('Owner ID must be a positive number').optional(),
+  imageUrl: z.string().optional().nullable(),
 });
 
 /**

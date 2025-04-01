@@ -45,7 +45,7 @@ export const verifyProjectOwnership =
       !(project.ownerId === payload.sub && payload.sub === userId) ||
       payload.role !== Role.ADMIN
     ) {
-      return c.json({ message: 'Unauthorized' }, StatusCodes.FORBIDDEN);
+      return c.json({ message: 'Unauthorized' }, StatusCodes.UNAUTHORIZED);
     }
 
     c.set('project', project);
@@ -87,7 +87,7 @@ export const verifyUseCaseOwnership =
       useCase.projectId !== projectId ||
       payload.role !== Role.ADMIN
     ) {
-      return c.json({ message: 'Unauthorized' }, StatusCodes.FORBIDDEN);
+      return c.json({ message: 'Unauthorized' }, StatusCodes.UNAUTHORIZED);
     }
 
     c.set('useCase', useCase);

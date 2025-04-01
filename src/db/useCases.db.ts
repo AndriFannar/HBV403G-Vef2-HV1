@@ -357,7 +357,11 @@ async function verifyNestedRelations(
       useCase.businessRules
         .filter(br => br.id === null)
         .map(async br => {
-          const publicId = await generateBusinessRulePublicId(tx, br);
+          const publicId = await generateBusinessRulePublicId(
+            tx,
+            br,
+            useCase.projectId
+          );
           return {
             ruleDef: br.ruleDef,
             type: br.type,

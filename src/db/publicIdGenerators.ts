@@ -139,13 +139,14 @@ export async function generateFlowPublicId(
  */
 export async function generateBusinessRulePublicId(
   tx: Prisma.TransactionClient,
-  businessRule: NewBusinessRule
+  businessRule: NewBusinessRule,
+  projectId: number
 ): Promise<string> {
   const projectSequence = await tx.projectSequence.findUnique({
     where: {
       // eslint-disable-next-line camelcase
       projectId_entityType: {
-        projectId: businessRule.projectId,
+        projectId: projectId,
         entityType: ProjectCounterType.BUSINESSRULE,
       },
     },

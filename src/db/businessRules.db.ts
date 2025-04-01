@@ -113,7 +113,11 @@ export async function createBusinessRule(
       );
     }
 
-    const publicId = await generateBusinessRulePublicId(tx, businessRule);
+    const publicId = await generateBusinessRulePublicId(
+      tx,
+      businessRule,
+      businessRule.projectId
+    );
 
     const createdBusinessRule = await tx.businessRule.create({
       data: {

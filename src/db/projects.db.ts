@@ -210,6 +210,7 @@ export async function createProject(project: NewProject): Promise<BaseProject> {
         description: project.description,
         ownerId: project.ownerId,
         slug: randomInt(MAX_RANDINT).toString(),
+        imageUrl: project.imageUrl,
         projectSequences: {
           create: [
             { entityType: ProjectCounterType.USECASE, count: 0 },
@@ -246,6 +247,7 @@ export async function updateProject(
       name: project.name,
       description: project.description,
       slug: generateSlug(project.name, project.id),
+      imageUrl: project.imageUrl,
     },
   });
 

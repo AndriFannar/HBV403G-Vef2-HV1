@@ -8,11 +8,12 @@
  */
 
 import { verifyProjectOwnership } from '../middleware/ownershipVerificationMiddleware.js';
+import { jwtMiddleware } from '../middleware/authMiddleware.js';
 import { getEnvironment } from '../lib/config/environment.js';
+import { uploadImage } from '../lib/cloudinary/cloudinary.js';
 import type { Variables } from '../entities/context.js';
 import { StatusCodes } from 'http-status-codes';
 import { logger } from '../lib/io/logger.js';
-import { jwt } from 'hono/jwt';
 import { Hono } from 'hono';
 import {
   createProject,
@@ -41,7 +42,7 @@ export const projectApp = new Hono<{ Variables: Variables }>()
    */
   .get(
     '/summary',
-    jwt({ secret: environment.jwtSecret }),
+    jwtMiddleware,
     parseParamId('userId'),
     processLimitOffset,
     async c => {
@@ -49,7 +50,7 @@ export const projectApp = new Hono<{ Variables: Variables }>()
         const userId = c.get('userId');
 
         if (c.get('jwtPayload').sub !== userId) {
-          return c.json({ message: 'Unauthorized' }, StatusCodes.FORBIDDEN);
+          return c.json({ message: 'Unauthorized' }, StatusCodes.UNAUTHORIZED);
         }
 
         const limit = c.get('limit');
@@ -83,7 +84,7 @@ export const projectApp = new Hono<{ Variables: Variables }>()
    */
   .get(
     '/:projectId',
-    jwt({ secret: environment.jwtSecret }),
+    jwtMiddleware,
     parseParamId('userId'),
     parseParamId('projectId'),
     verifyProjectOwnership(true),
@@ -104,58 +105,87 @@ export const projectApp = new Hono<{ Variables: Variables }>()
   /**
    * @description Create a new project
    */
-  .post(
-    '/',
-    jwt({ secret: environment.jwtSecret }),
-    parseParamId('userId'),
-    async c => {
+  .post('/', jwtMiddleware, parseParamId('userId'), async c => {
+    try {
+      const formData = await c.req.formData();
+      const dataString = formData.get('data');
+
+      if (!dataString || typeof dataString !== 'string') {
+        return c.json({ message: 'Invalid data' }, StatusCodes.BAD_REQUEST);
+      }
+
+      let newProject: unknown;
       try {
-        let newProject: unknown;
-        try {
-          newProject = await c.req.json();
-        } catch {
-          return c.json({ message: 'Invalid JSON' }, StatusCodes.BAD_REQUEST);
-        }
+        newProject = JSON.parse(dataString);
+      } catch {
+        return c.json({ message: 'Invalid JSON' }, StatusCodes.BAD_REQUEST);
+      }
 
-        const authenticatedUserId = c.get('jwtPayload').sub;
+      const authenticatedUserId = c.get('jwtPayload').sub;
 
-        if (authenticatedUserId !== c.get('userId')) {
-          return c.json({ message: 'Unauthorized' }, StatusCodes.FORBIDDEN);
-        }
+      if (authenticatedUserId !== c.get('userId')) {
+        return c.json({ message: 'Unauthorized' }, StatusCodes.UNAUTHORIZED);
+      }
 
-        const validProject = await validateAndSanitizeNewProject(newProject);
+      const validProject = await validateAndSanitizeNewProject(newProject);
 
-        if (!validProject.data) {
+      if (!validProject.data) {
+        return c.json(
+          { message: 'Invalid data', errors: validProject.error },
+          StatusCodes.BAD_REQUEST
+        );
+      }
+
+      validProject.data.ownerId = authenticatedUserId;
+      let createdProject = await createProject(validProject.data);
+
+      const imageUrl = await uploadImage(
+        formData.get('image'),
+        createdProject.id
+      );
+
+      if (imageUrl) {
+        createdProject.imageUrl = imageUrl;
+
+        const updatedProject = await updateProject(createdProject);
+        if (updatedProject) {
+          createdProject = updatedProject;
+        } else {
           return c.json(
-            { message: 'Invalid data', errors: validProject.error },
-            StatusCodes.BAD_REQUEST
+            { message: 'Failed to update project with image URL' },
+            StatusCodes.INTERNAL_SERVER_ERROR
           );
         }
-
-        validProject.data.ownerId = authenticatedUserId;
-        const createdProject = await createProject(validProject.data);
-        return c.json(createdProject, StatusCodes.CREATED);
-      } catch (e) {
-        logger.error('Failed to create Project:', e);
-        throw e;
       }
+
+      return c.json(createdProject, StatusCodes.CREATED);
+    } catch (e) {
+      logger.error('Failed to create Project:', e);
+      throw e;
     }
-  )
+  })
 
   /**
    * @description Update a project by ID
    */
   .patch(
     '/:projectId',
-    jwt({ secret: environment.jwtSecret }),
+    jwtMiddleware,
     parseParamId('userId'),
     parseParamId('projectId'),
     verifyProjectOwnership(false),
     async c => {
       try {
+        const formData = await c.req.formData();
+        const dataString = formData.get('data');
+
+        if (!dataString || typeof dataString !== 'string') {
+          return c.json({ message: 'Invalid data' }, StatusCodes.BAD_REQUEST);
+        }
+
         let updatedProjectInfo: unknown;
         try {
-          updatedProjectInfo = await c.req.json();
+          updatedProjectInfo = JSON.parse(dataString);
         } catch {
           return c.json({ message: 'Invalid JSON' }, StatusCodes.BAD_REQUEST);
         }
@@ -174,6 +204,15 @@ export const projectApp = new Hono<{ Variables: Variables }>()
 
         validProject.data.ownerId = authenticatedUserId;
 
+        const imageUrl = await uploadImage(
+          formData.get('image'),
+          c.get('project').id
+        );
+
+        if (imageUrl) {
+          validProject.data.imageUrl = imageUrl;
+        }
+
         const updatedProject = await updateProject(validProject.data);
         return c.json(updatedProject);
       } catch (e) {
@@ -188,7 +227,7 @@ export const projectApp = new Hono<{ Variables: Variables }>()
    */
   .delete(
     '/:projectId',
-    jwt({ secret: environment.jwtSecret }),
+    jwtMiddleware,
     parseParamId('userId'),
     parseParamId('projectId'),
     verifyProjectOwnership(false),
