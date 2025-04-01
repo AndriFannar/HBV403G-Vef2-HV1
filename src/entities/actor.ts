@@ -17,7 +17,10 @@ export const NewActorSchema = z.object({
   id: z.number().optional().nullable(),
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional().nullable(),
-  projectId: z.number().positive('Project ID must be a positive number'),
+  projectId: z
+    .number()
+    .positive('Project ID must be a positive number')
+    .optional(),
 });
 
 /**
@@ -25,6 +28,7 @@ export const NewActorSchema = z.object({
  */
 export const BaseActorSchema = NewActorSchema.extend({
   id: z.number().positive('ID must be a positive number'),
+  projectId: z.number().positive('Project ID must be a positive number'),
 });
 
 /**

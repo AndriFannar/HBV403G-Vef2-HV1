@@ -221,10 +221,38 @@ async function processActor(
         name: actor.name,
         description: actor.description,
         project: { connect: { id: projectId } },
-        projectId: projectId,
+        //projectId: projectId,
       },
     };
   }
+}
+
+/**
+ * Process primary actor for a useCase.
+ * @param tx - The Prisma transaction client.
+ * @param actor - The actor to process.
+ * @param projectId - The ID of the project to which the actor belongs.
+ * @returns - The processed actor data.
+ */
+async function processPrimaryActor(
+  tx: Prisma.TransactionClient,
+  actor: NewActor,
+  projectId: number
+) {
+  const primaryActorOp = await processActor(tx, actor, projectId);
+  let primaryActorId: number;
+  if (primaryActorOp.connect?.id !== undefined) {
+    primaryActorId = primaryActorOp.connect.id;
+  } else if ('create' in primaryActorOp && primaryActorOp.create) {
+    const createdActor = await tx.actor.create({
+      data: primaryActorOp.create,
+    });
+    primaryActorId = createdActor.id;
+  } else {
+    throw new Error('Invalid primary actor data');
+  }
+
+  return primaryActorId;
 }
 
 /**
@@ -284,6 +312,13 @@ async function verifyNestedRelations(
     })
   );
 
+  const secondaryActorsConnect = secondaryActorsOp
+    .filter(op => 'connect' in op)
+    .map(op => (op as { connect: { id: number } }).connect);
+  const secondaryActorsCreate = secondaryActorsOp
+    .filter(op => 'create' in op)
+    .map(op => (op as { create: never }).create);
+
   let businessRulesConnect;
   try {
     businessRulesConnect = await Promise.all(
@@ -340,7 +375,8 @@ async function verifyNestedRelations(
   return {
     conditionsData,
     flowsData,
-    secondaryActorsOp,
+    secondaryActorsConnect,
+    secondaryActorsCreate,
     businessRulesConnect,
     businessRulesCreate,
   };
@@ -362,22 +398,11 @@ export async function createUseCase(useCase: NewUseCase): Promise<UseCase> {
     }
 
     // Process Primary Actor
-    const primaryActorOp = await processActor(
+    const primaryActorId = await processPrimaryActor(
       tx,
       useCase.primaryActor,
       useCase.projectId
     );
-    let primaryActorId: number;
-    if (primaryActorOp.connect?.id !== undefined) {
-      primaryActorId = primaryActorOp.connect.id;
-    } else if ('create' in primaryActorOp && primaryActorOp.create) {
-      const createdActor = await tx.actor.create({
-        data: primaryActorOp.create,
-      });
-      primaryActorId = createdActor.id;
-    } else {
-      throw new Error('Invalid primary actor data');
-    }
 
     // Create Base UseCase
     const createdUseCase = await tx.useCase.create({
@@ -417,14 +442,6 @@ export async function createUseCase(useCase: NewUseCase): Promise<UseCase> {
       throw new Error('Error verifying nested relations:' + error);
     }
 
-    // Separate actors into those needed to connect and those to create
-    const secondaryActorsConnect = verifiedData.secondaryActorsOp
-      .filter(op => 'connect' in op)
-      .map(op => (op as { connect: { id: number } }).connect);
-    const secondaryActorsCreate = verifiedData.secondaryActorsOp
-      .filter(op => 'create' in op)
-      .map(op => (op as { create: never }).create);
-
     const newSlug = generateSlug(
       createdUseCase.name,
       createdUseCase.id,
@@ -439,8 +456,8 @@ export async function createUseCase(useCase: NewUseCase): Promise<UseCase> {
       data: {
         slug: newSlug,
         secondaryActors: {
-          connect: secondaryActorsConnect,
-          create: secondaryActorsCreate,
+          connect: verifiedData.secondaryActorsConnect,
+          create: verifiedData.secondaryActorsCreate,
         },
         conditions: {
           create: verifiedData.conditionsData,
@@ -505,22 +522,11 @@ export async function updateUseCase(
     }
 
     // Process Primary Actor
-    const primaryActorOp = await processActor(
+    const primaryActorId = await processPrimaryActor(
       tx,
       useCase.primaryActor,
       useCase.projectId
     );
-    let primaryActorId: number;
-    if (primaryActorOp.connect?.id !== undefined) {
-      primaryActorId = primaryActorOp.connect.id;
-    } else if ('create' in primaryActorOp && primaryActorOp.create) {
-      const createdActor = await tx.actor.create({
-        data: primaryActorOp.create,
-      });
-      primaryActorId = createdActor.id;
-    } else {
-      throw new Error('Invalid primary actor data');
-    }
 
     // Verify nested relations
     let verifiedData;
@@ -529,14 +535,6 @@ export async function updateUseCase(
     } catch (error) {
       throw new Error('Error verifying nested relations:' + error);
     }
-
-    // Separate actors into those needed to connect and those to create
-    const secondaryActorsConnect = verifiedData.secondaryActorsOp
-      .filter(op => 'connect' in op)
-      .map(op => (op as { connect: { id: number } }).connect);
-    const secondaryActorsCreate = verifiedData.secondaryActorsOp
-      .filter(op => 'create' in op)
-      .map(op => (op as { create: never }).create);
 
     // Update the use case with all the relations needed.
     const updatedUseCase = await tx.useCase.update({
@@ -561,8 +559,8 @@ export async function updateUseCase(
         primaryActorId: primaryActorId,
         secondaryActors: {
           set: [],
-          connect: secondaryActorsConnect,
-          create: secondaryActorsCreate,
+          connect: verifiedData.secondaryActorsConnect,
+          create: verifiedData.secondaryActorsCreate,
         },
         businessRules: {
           set: [],

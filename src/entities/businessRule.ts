@@ -21,7 +21,10 @@ export const NewBusinessRuleSchema = z.object({
   type: z.nativeEnum(RuleType),
   mutability: z.nativeEnum(Mutability),
   source: z.string().min(1, 'Source is required'),
-  projectId: z.number().positive('Project ID must be a positive number'),
+  projectId: z
+    .number()
+    .positive('Project ID must be a positive number')
+    .optional(),
 });
 
 /**
@@ -29,6 +32,7 @@ export const NewBusinessRuleSchema = z.object({
  */
 export const BaseBusinessRuleSchema = NewBusinessRuleSchema.extend({
   id: z.number().positive('ID must be a positive number'),
+  projectId: z.number().positive('Project ID must be a positive number'),
 }).merge(Referencible);
 
 /**

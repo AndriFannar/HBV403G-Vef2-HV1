@@ -67,6 +67,7 @@ export const validateAndSanitizeBaseActor = async (
     data: {
       ...sanitizedData.data,
       id: parsed.data.id,
+      projectId: parsed.data.projectId,
     },
   };
 };

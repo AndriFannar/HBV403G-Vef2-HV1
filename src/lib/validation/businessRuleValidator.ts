@@ -69,6 +69,7 @@ export const validateAndSanitizeBaseBusinessRule = async (
       ...sanitizedData.data,
       id: parsed.data.id,
       publicId: sanitizeString(parsed.data.publicId),
+      projectId: parsed.data.projectId,
     },
   };
 };

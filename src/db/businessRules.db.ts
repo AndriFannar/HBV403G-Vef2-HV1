@@ -98,13 +98,21 @@ export async function getBusinessRuleById(
 
 /**
  * Creates a new businessRule.
+ * @requires projectId to be set in the businessRule entity.
  * @param businessRule - The new businessRule to create.
+ * @throws - An error if the projectId is not set.
  * @returns - The created businessRule.
  */
 export async function createBusinessRule(
   businessRule: NewBusinessRule
 ): Promise<BaseBusinessRule> {
   return await prisma.$transaction(async tx => {
+    if (!businessRule.projectId) {
+      throw new Error(
+        'The variable projectId is required to create a Business Rule'
+      );
+    }
+
     const publicId = await generateBusinessRulePublicId(tx, businessRule);
 
     const createdBusinessRule = await tx.businessRule.create({

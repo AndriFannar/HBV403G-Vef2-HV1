@@ -71,7 +71,7 @@ export const businessRuleApp = new Hono<{ Variables: Variables }>()
     jwt({ secret: environment.jwtSecret }),
     parseParamId('userId'),
     parseParamId('projectId'),
-    verifyProjectOwnership,
+    verifyProjectOwnership(false),
     async c => {
       try {
         const project = c.get('project');
@@ -117,7 +117,7 @@ export const businessRuleApp = new Hono<{ Variables: Variables }>()
     parseParamId('userId'),
     parseParamId('projectId'),
     parseParamId('businessRuleId'),
-    verifyProjectOwnership,
+    verifyProjectOwnership(false),
     fetchAndVerifyBusinessRule,
     async c => {
       try {
@@ -139,7 +139,7 @@ export const businessRuleApp = new Hono<{ Variables: Variables }>()
     jwt({ secret: environment.jwtSecret }),
     parseParamId('userId'),
     parseParamId('projectId'),
-    verifyProjectOwnership,
+    verifyProjectOwnership(false),
     async c => {
       try {
         let newBusinessRule: unknown;
@@ -159,6 +159,7 @@ export const businessRuleApp = new Hono<{ Variables: Variables }>()
           );
         }
 
+        validBusinessRule.data.projectId = c.get('project').id;
         const createdBusinessRule = await createBusinessRule(
           validBusinessRule.data
         );
@@ -179,7 +180,7 @@ export const businessRuleApp = new Hono<{ Variables: Variables }>()
     parseParamId('userId'),
     parseParamId('projectId'),
     parseParamId('businessRuleId'),
-    verifyProjectOwnership,
+    verifyProjectOwnership(false),
     fetchAndVerifyBusinessRule,
     async c => {
       try {
@@ -223,7 +224,7 @@ export const businessRuleApp = new Hono<{ Variables: Variables }>()
     parseParamId('userId'),
     parseParamId('projectId'),
     parseParamId('businessRuleId'),
-    verifyProjectOwnership,
+    verifyProjectOwnership(false),
     fetchAndVerifyBusinessRule,
     async c => {
       try {

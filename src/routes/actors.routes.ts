@@ -71,7 +71,7 @@ export const actorApp = new Hono<{ Variables: Variables }>()
     jwt({ secret: environment.jwtSecret }),
     parseParamId('userId'),
     parseParamId('projectId'),
-    verifyProjectOwnership,
+    verifyProjectOwnership(false),
     async c => {
       try {
         const project = c.get('project');
@@ -110,7 +110,7 @@ export const actorApp = new Hono<{ Variables: Variables }>()
     parseParamId('userId'),
     parseParamId('projectId'),
     parseParamId('actorId'),
-    verifyProjectOwnership,
+    verifyProjectOwnership(false),
     fetchAndVerifyActor,
     async c => {
       try {
@@ -132,7 +132,7 @@ export const actorApp = new Hono<{ Variables: Variables }>()
     jwt({ secret: environment.jwtSecret }),
     parseParamId('userId'),
     parseParamId('projectId'),
-    verifyProjectOwnership,
+    verifyProjectOwnership(false),
     async c => {
       try {
         let newActor: unknown;
@@ -151,6 +151,7 @@ export const actorApp = new Hono<{ Variables: Variables }>()
           );
         }
 
+        validActor.data.projectId = c.get('project').id;
         const createdActor = await createActor(validActor.data);
         return c.json(createdActor, StatusCodes.CREATED);
       } catch (e) {
@@ -169,7 +170,7 @@ export const actorApp = new Hono<{ Variables: Variables }>()
     parseParamId('userId'),
     parseParamId('projectId'),
     parseParamId('actorId'),
-    verifyProjectOwnership,
+    verifyProjectOwnership(false),
     fetchAndVerifyActor,
     async c => {
       try {
@@ -190,7 +191,7 @@ export const actorApp = new Hono<{ Variables: Variables }>()
         }
 
         validActor.data.id = c.get('actor').id;
-
+        validActor.data.projectId = c.get('project').id;
         const updatedActor = await updateActor(validActor.data);
         return c.json(updatedActor);
       } catch (e) {
@@ -209,7 +210,7 @@ export const actorApp = new Hono<{ Variables: Variables }>()
     parseParamId('userId'),
     parseParamId('projectId'),
     parseParamId('actorId'),
-    verifyProjectOwnership,
+    verifyProjectOwnership(false),
     fetchAndVerifyActor,
     async c => {
       try {
