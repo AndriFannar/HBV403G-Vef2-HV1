@@ -13,7 +13,8 @@ Hægt er að skoða hönnun forritsins [hér](designDocs/Design.png)
 Verkefnið krefst `Node.js` útgáfu 22.
 Hægt er að setja upp verkefnið með því að gera 
 ```bash
-npm ic && npm run build
+npm ic
+npm run build
 ```
 
 ### Keyrsla
