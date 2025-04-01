@@ -8,9 +8,9 @@
  */
 
 import { Validator } from '../../entities/validator.js';
+import { sanitizeString } from './sanitizeString.js';
 import { SlugSchema } from '../../entities/slug.js';
 import { z } from 'zod';
-import xss from 'xss';
 
 type ValidateSlugType = z.infer<
   ReturnType<typeof Validator<typeof SlugSchema>>
@@ -29,7 +29,7 @@ export const validateAndSanitizeSlug = async (
     return { error: parsed.error.format() };
   }
 
-  const sanitizedData = xss(parsed.data.trim());
+  const sanitizedData = sanitizeString(parsed.data);
 
   return { data: sanitizedData };
 };

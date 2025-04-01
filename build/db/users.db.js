@@ -4,11 +4,11 @@
  * @author Andri Fannar Kristjánsson
  * @version 1.0.0
  * @date March 04, 2025
- * @dependencies user.js, @prisma/client, logger
+ * @dependencies user.js, @prisma/client
  */
 import { PrismaClient } from '@prisma/client';
 export const prisma = new PrismaClient();
-const defaultNumUsers = 10;
+const DEF_NUM_USERS = 10;
 /**
  * Gets all users.
  * @param limit - The maximum number of users to return.
@@ -16,7 +16,7 @@ const defaultNumUsers = 10;
  * @returns - All users between the limit and offset, if provided. Otherwise, gets defaultNumUsers users.
  *            If there are no users, returns an empty array.
  */
-export async function getUsers(limit = defaultNumUsers, offset = 0) {
+export async function getAllUsers(limit = DEF_NUM_USERS, offset = 0) {
     const users = await prisma.user.findMany({
         skip: offset,
         take: limit,
@@ -28,10 +28,23 @@ export async function getUsers(limit = defaultNumUsers, offset = 0) {
  * @param username - The username of the user to get.
  * @returns - The user with the given username or null if not found.
  */
-export async function getUser(username) {
+export async function getUserByUsername(username) {
     const user = await prisma.user.findFirst({
         where: {
             username: username,
+        },
+    });
+    return user ?? null;
+}
+/**
+ * Gets a user by ID.
+ * @param id - The ID of the user to get.
+ * @returns - The user with the given ID or null if not found.
+ */
+export async function getUserById(id) {
+    const user = await prisma.user.findFirst({
+        where: {
+            id: id,
         },
     });
     return user ?? null;
@@ -49,4 +62,31 @@ export async function createUser(user) {
         },
     });
     return newUser;
+}
+/**
+ * Updates a user by ID.
+ * @param user - The new user data.
+ * @returns - The updated user, if it exists. Otherwise, returns null.
+ */
+export async function updateUser(user) {
+    const updatedUser = await prisma.user.update({
+        where: {
+            id: user.id,
+        },
+        data: {
+            username: user.username,
+            password: user.password,
+            role: user.role,
+        },
+    });
+    return updatedUser;
+}
+/**
+ * Deletes an user by ID.
+ * @param id - The ID of the user to delete.
+ */
+export async function deleteUser(id) {
+    await prisma.user.delete({
+        where: { id: id },
+    });
 }
